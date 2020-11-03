@@ -120,10 +120,10 @@ public:
 
     /* string conversion */
     void FromHexString(const std::string& s);
-    inline void FromBytes(const char* src,    size_t n=N/8, uBigInt::ENDIAN endian = uBigInt::MSB) {
+    inline void FromBytes(const char* src,    size_t n = N/8, uBigInt::ENDIAN endian = uBigInt::MSB) {
         FromBytes(reinterpret_cast<const uint8_t*>(src), n, endian);
     }
-    inline void FromBytes(const uint8_t* src, size_t n=N/8, uBigInt::ENDIAN endian = uBigInt::MSB) {
+    inline void FromBytes(const uint8_t* src, size_t n = N/8, uBigInt::ENDIAN endian = uBigInt::MSB) {
         mpz_import(val.get_mpz_t(), std::min<size_t>(n,N/8), endian, sizeof(char), 0/*endian?*/, 0, src);
     }
     std::string toString(int base=16) const;
@@ -251,13 +251,13 @@ std::string uBigInt<N>::toBytes(uBigInt::ENDIAN endian) {
         out.put(0);   // padding leading zero if cnt < N/8
     }
     out.write(bytes, cnt);
-
+    /* ENDIAN::MSB implement */
     // TODO: implement for ENDIAN::LSB && ENDIAN::NATIVE
 
-    // free the allocated memory by mpz_export()
+    // free the memory which allocated by mpz_export()
     void (*free_fn) (void *, size_t) = NULL;
     mp_get_memory_functions(NULL, NULL, &free_fn);
-    free_fn(bytes, cnt*sizeof(char));
+    free_fn(bytes, cnt*sizeof(char));    // free the allocated memory by mpz_export()
 
     return out.str();
 }
