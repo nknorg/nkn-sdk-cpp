@@ -9,7 +9,7 @@
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 
-#include <dtype/uBigInt.h>
+#include <include/uBigInt.h>
 
 using namespace rapidjson;
 
@@ -160,7 +160,7 @@ public:
     virtual Encoder& operator&(double& d);
     virtual Encoder& operator&(std::string& s);
     template <size_t N>
-    Encoder& operator&(uBigInt<N> &bi);
+    Encoder& operator&(const uBigInt<N> &bi);
     virtual Encoder& SetNull();
 
     static const bool IsReader = false;
@@ -176,12 +176,11 @@ private:
 };
 
 template <size_t N>
-Encoder& Encoder::operator&(uBigInt<N> &bi){
+Encoder& Encoder::operator&(const uBigInt<N> &bi){
     std::string s = bi.toHexString();
     WRITER->String(s.c_str(), static_cast<SizeType>(s.size()));
     return *this;
 }
-
 };  // namespace JSON
 };  // namespace NKN
 
