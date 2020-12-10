@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <random>
+#include <memory>
 
 #include <gmpxx.h>
 #include <string>

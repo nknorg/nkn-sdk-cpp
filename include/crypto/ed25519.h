@@ -1,10 +1,6 @@
 #ifndef __NKN_ED25519_H__
 #define __NKN_ED25519_H__
 
-/* extern "C" {
-#include <openssl/evp.h>
-#include <openssl/kdf.h>
-} */
 #include <sodium.h>
 
 #include "include/uBigInt.h"
