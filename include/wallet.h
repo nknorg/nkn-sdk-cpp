@@ -1,13 +1,15 @@
 #ifndef __NKN_WALLET_H__
 #define __NKN_WALLET_H__
 
-#include <json/NKNCodec.h>
 #include <memory>
+#include <cassert>
 
 #include "include/crypto/crypto.h"
 #include "include/crypto/ed25519.h"
 #include "include/account.h"
 #include "include/walletData.h"
+
+#include "json/NKNCodec.h"
 
 using namespace std;
 
@@ -35,51 +37,26 @@ namespace Wallet {
                     IV(iv), MasterKey(mstKey), Password(pswd), ScryptConfig(cfg), SeedRPCServerAddr(rpcSrvs) {}
 
         inline static const WalletCfg_t& GetDefaultWalletConfig() { return DefaultWalletConfig; }
-        const string GetRandomSeedRPCServerAddr() {
-            auto len = SeedRPCServerAddr.size();
-            uint32_t r = random_device()() % len;
+        const string GetRandomSeedRPCServerAddr();
 
-            if (0 == len) {    // TODO Empty cfg warning
-                cerr << "RPC config is Empty. " << len << endl;
-                return "";
+        // MergeWalletConfig merges a given wallet config with the default wallet config recursively. Any non zero value fields will override the default config.
+        static shared_ptr<WalletCfg_t> MergeWalletConfig(const shared_ptr<const WalletCfg_t> cfg) {
+            shared_ptr<WalletCfg_t> ret(new WalletCfg_t(DefaultWalletConfig));
+            if (cfg) {
+                if(cfg->IV)                              ret->IV = cfg->IV;
+                if(cfg->MasterKey)                       ret->MasterKey = cfg->MasterKey;
+                if(cfg->Password.length() > 0)           ret->Password = cfg->Password;
+                if(cfg->ScryptConfig.Salt)               ret->ScryptConfig = cfg->ScryptConfig;   // copy N,R,P together if Salt not empty
+                if(cfg->SeedRPCServerAddr.size() > 0)    ret->SeedRPCServerAddr = cfg->SeedRPCServerAddr;
             }
-            return SeedRPCServerAddr[r];
+            return ret;
         }
 
-        static shared_ptr<WalletCfg_t> MergeWalletConfig(const shared_ptr<const WalletCfg_t> cfg);
-
-        const WalletCfg_t& operator=(const WalletCfg_t& cfg) {
-            IV = cfg.IV;
-            MasterKey = cfg.MasterKey;
-            Password = cfg.Password;
-            ScryptConfig = cfg.ScryptConfig;
-            SeedRPCServerAddr = cfg.SeedRPCServerAddr;
-            return *this;
-        }
+        const WalletCfg_t& operator=(const WalletCfg_t& cfg);
         WalletCfg_t& operator&&(const WalletCfg_t& cfg);        // TODO Merge & Update myself with given cfg
         WalletCfg_t& operator&&(const WalletCfg_t& cfg) const;  // TODO Merge cfg with myself and return a new one
         bool isContainedServAddr(const string& s);  // TODO
     } WalletCfg_t;
-    const WalletCfg_t DefaultWalletConfig {
-        "",
-        "",
-        "",
-        DefaultScryptConfig,
-        DefaultSeedRPCServerAddr
-    };
-    // MergeWalletConfig merges a given wallet config with the default wallet config recursively. Any non zero value fields will override the default config.
-    shared_ptr<WalletCfg_t> WalletCfg::MergeWalletConfig(shared_ptr<const WalletCfg_t> cfg) {
-        shared_ptr<WalletCfg_t> ret(new WalletCfg_t(DefaultWalletConfig));
-        if (cfg) {
-            if(cfg->IV)                              ret->IV = cfg->IV;
-            if(cfg->MasterKey)                       ret->MasterKey = cfg->MasterKey;
-            if(cfg->Password.length() > 0)           ret->Password = cfg->Password;
-            if(cfg->ScryptConfig.Salt)               ret->ScryptConfig = cfg->ScryptConfig;   // copy N,R,P together if Salt not empty
-            if(cfg->SeedRPCServerAddr.size() > 0)    ret->SeedRPCServerAddr = cfg->SeedRPCServerAddr;
-        }
-        return ret;
-    }
-
 };  // namespace Wallet
 };  // namespace NKN
 
@@ -102,23 +79,9 @@ T& operator&(T& jsonCodec, NKN::Wallet::WalletCfg_t &w) {
     return jsonCodec.EndObject();
 }
 
-/* Implement insertion/extration template specialized for Object
- * Otherwise it will match default insertion & extration from json/NKNCodec.h
-*/
-// template < >
-std::ostream& operator<<(std::ostream &s, const NKN::Wallet::WalletCfg_t& w) {
-    NKN::JSON::Encoder out;
-    out & const_cast<NKN::Wallet::WalletCfg_t&>(w);
-    return s << out.GetString();
-};
-
-// template < >
-std::istream& operator>>(std::istream &s, NKN::Wallet::WalletCfg_t& w) {
-    string json(istreambuf_iterator<char>(s), *(new istreambuf_iterator<char>()));
-    NKN::JSON::Decoder dec(json);
-    dec & w;
-    return s;
-}
+/*** WalletCfg I/O stream operation ***/
+std::ostream& operator<<(std::ostream &s, const NKN::Wallet::WalletCfg_t& w);
+std::istream& operator>>(std::istream &s, NKN::Wallet::WalletCfg_t& w);
 
 namespace NKN{
 namespace Wallet{
@@ -139,42 +102,13 @@ namespace Wallet{
         inline string Address() { return address; }
     } Wallet_t;
 
-    shared_ptr<Wallet_t> NewWallet(shared_ptr<Account_t> acc, shared_ptr<WalletCfg_t> walletcfg) {
-        assert(acc != NULL);
-        shared_ptr<WalletData_t> wd(NULL);
-        auto cfg = WalletCfg::MergeWalletConfig(walletcfg);
+    shared_ptr<Wallet_t> NewWallet(shared_ptr<Account_t> acc, shared_ptr<WalletCfg_t> walletcfg);
 
-        if(0 != cfg->Password.length() || 0 != cfg->MasterKey) {
-            wd = WalletData::NewWalletData(acc, cfg->Password, cfg->MasterKey, cfg->IV,
-                    cfg->ScryptConfig.Salt, cfg->ScryptConfig.N, cfg->ScryptConfig.R, cfg->ScryptConfig.P);
-        }
-
-        return make_shared<Wallet_t>(cfg, acc, wd);
-    }
-
-    shared_ptr<Wallet_t> WalletFromJSON(string jsonStr, shared_ptr<WalletCfg_t> cfg) {
-        auto Mergedcfg = WalletCfg::MergeWalletConfig(cfg);
-        auto wd = shared_ptr<WalletData>(new WalletData());
-        NKN::JSON::Decoder dec(jsonStr);
-
-        dec & *wd;
-
-        if ( ! wd->isSupportedVer() ) {
-            fprintf(stderr, "Only support V2 wallet at current\n");
-            return NULL;
-        }
-
-        auto acc = wd->DecryptAccount(Mergedcfg->Password);
-        if ( 0 != acc->WalletAddress().compare(wd->Address) ) {
-            fprintf(stderr, "Wrong Password\n");
-            return NULL;
-        }
-        return make_shared<Wallet_t>(Mergedcfg, acc, wd);
-    }
+    shared_ptr<Wallet_t> WalletFromJSON(string jsonStr, shared_ptr<WalletCfg_t> cfg);
 };  // namespace Wallet
 };  // namespace NKN
 
-// WalletData_t json Parser
+// Wallet_t json Parser
 template <typename T>
 T& operator&(T& jsonCodec, NKN::Wallet::Wallet& w) {
     jsonCodec.StartObject();
@@ -187,9 +121,9 @@ T& operator&(T& jsonCodec, NKN::Wallet::Wallet& w) {
     return jsonCodec.EndObject();
 }
 
-std::ostream& operator<<(std::ostream &s, const NKN::Wallet::Wallet& w) {
-    NKN::JSON::Encoder out;
-    out & const_cast<NKN::Wallet::Wallet&>(w);
-    return s << out.GetString();
-};
+/*** Wallet I/O stream operation ***/
+std::ostream& operator<<(std::ostream &s, const NKN::Wallet::Wallet& w);
+// Disable iStream operation of Wallet_t, instead with NKN::Wallet::WalletFromJSON(from vault keyStore)
+// std::istream& operator>>(std::istream &s, NKN::Wallet::Wallet& w);
+
 #endif  // __NKN_WALLET_H__

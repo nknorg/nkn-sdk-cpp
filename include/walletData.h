@@ -1,6 +1,8 @@
 #ifndef __NKN_WALLET_DATA_H__
 #define __NKN_WALLET_DATA_H__
 
+#include <memory>
+
 #include "include/crypto/crypto.h"
 #include "include/account.h"
 
@@ -37,7 +39,7 @@ namespace Wallet {
             return shared_ptr<ScryptCfg_t>(new ScryptCfg(*u64_ptr, N, R, P));
         }
     };
-    const ScryptCfg_t DefaultScryptConfig(0);
+    extern const ScryptCfg_t DefaultScryptConfig;
 
     inline static const Uint256 PasswordToAesKeyScrypt(const string& pswd, const ScryptData_t& data) {
         return SCRYPT<Uint256>::KeyDerive(pswd, data.Salt, data.N, data.R, data.P);
@@ -55,6 +57,11 @@ T& operator&(T &jsonCodec, NKN::Wallet::ScryptCfg_t &s) {
     jsonCodec.Member("P") & s.P;
     return jsonCodec.EndObject();
 }
+
+/*** ScryptCfg I/O stream operation ***/
+std::ostream& operator<<(std::ostream &s, const NKN::Wallet::ScryptCfg_t &n);
+std::istream& operator>>(std::istream &s, NKN::Wallet::ScryptCfg_t &n);
+
 
 /***************
  * Wallet Data *
@@ -134,5 +141,9 @@ T& operator&(T& jsonCodec, NKN::Wallet::WalletData_t &wd) {
     jsonCodec.Member("Scrypt") & *wd.ScryptData;
     return jsonCodec.EndObject();
 }
+
+/*** WalletData I/O stream operation ***/
+std::ostream& operator<<(std::ostream &s, const NKN::Wallet::WalletData_t& wd);
+std::istream& operator>>(std::istream &s, NKN::Wallet::WalletData_t& wd);
 
 #endif // __NKN_WALLET_DATA_H__

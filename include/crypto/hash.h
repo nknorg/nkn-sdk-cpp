@@ -78,7 +78,7 @@ namespace NKN{
     }
 
     // Dump hash result to buf and mark closed
-    uint32_t HASH::_flush(void* buf) {
+    inline uint32_t HASH::_flush(void* buf) {
         uint32_t md_len = 0;
 
         if (closed) {/* TODO throw */}

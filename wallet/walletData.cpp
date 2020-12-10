@@ -47,6 +47,8 @@ std::istream& operator>>(std::istream &s, NKN::Wallet::ScryptCfg_t &n) {
 
 namespace NKN {
 namespace Wallet {
+    const ScryptCfg_t DefaultScryptConfig(0);
+
     WalletData::WalletData(shared_ptr<ScryptCfg_t> cfg) : Version(V2), ScryptData(cfg) {
         if (ScryptData == NULL)
             ScryptData = make_shared<ScryptCfg_t>();
