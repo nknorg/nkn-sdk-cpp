@@ -96,6 +96,7 @@ namespace Wallet{
                 shared_ptr<Account_t> acc=NULL, shared_ptr<WalletData_t> data=NULL)
             : config(cfg), account(acc), walletData(data), address( data ? data->Address : "") {}
 
+        inline const Uint512          PrivKey()     { return account ? account->GetPrivateKeyFromSeed() : Uint512(0); }
         inline ED25519::PubKey_t      PubKey()      { return account ? account->PublicKey   : ED25519::PubKey_t(0); }
         inline ED25519::PrivKey_t     Seed()        { return account ? account->PrivateKey  : ED25519::PrivKey_t(0); }
         inline ED25519::ProgramHash_t ProgramHash() { return account ? account->ProgramHash : ED25519::ProgramHash_t(0); }

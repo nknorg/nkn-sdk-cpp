@@ -26,6 +26,7 @@ namespace Wallet {
         inline static shared_ptr<const Account_t> const NewAccount() { return shared_ptr<const Account_t>(new Account()); }
         inline static shared_ptr<const Account_t> const NewAccount(ED25519::PrivKey_t seed) { return make_shared<const Account_t>(seed); }
         inline const string WalletAddress() { return ProgramHash.toAddress(); }
+        inline const Uint512 GetPrivateKeyFromSeed() { return Uint512(PrivateKey.toHexString() + PublicKey.toHexString()); }
     };
 };  // namespace Wallet
 };  // namespace NKN
