@@ -11,20 +11,53 @@ using namespace std;
 
 namespace NKN {
 namespace ED25519 {
+    // FOOLPROOFPREFIX used for fool-proof prefix
+    // base58.BitcoinEncoding[21] = 'N', base58.BitcoinEncoding[18] = 'K'
+    // 33 = len(base58.Encode( (2**192).Bytes() )),  192 = 8bit * (UINT160SIZE + SHA256CHKSUM)
+    // (('N' * 58**35) + ('K' * 58**34) + ('N' * 58**33)) >> 192 = 0x02b824
+    constexpr char    FOOLPROOFPREFIX[] = {0x02, (char)0xb8, 0x25};
+    constexpr uint8_t CHECKSIG = 0xAC;
+
+    constexpr size_t ProgramHash_SIZE = 160/8;
+    constexpr size_t ADDR_STR_LEN     = 36; // len of (2**192).Bytes() = 33, +3 'NKN' prefix
+
+    constexpr size_t PREFIXLEN        = sizeof(FOOLPROOFPREFIX);
+    constexpr size_t SHA256CHKSUM     = 4;
+    constexpr size_t HEXADDRLEN       = PREFIXLEN + ProgramHash_SIZE + SHA256CHKSUM;
+
     typedef struct ProgramHash : public Uint160 {
         ProgramHash() : Uint160() {}
         // construct from MSB fixed len char array
-        ProgramHash(char    data[160/8])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), 20); }
-        ProgramHash(uint8_t data[160/8])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), 20); }
-        ProgramHash(const char    data[160/8]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), 20); }
-        ProgramHash(const uint8_t data[160/8]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), 20); }
+        ProgramHash(char    data[ProgramHash_SIZE])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
+        ProgramHash(uint8_t data[ProgramHash_SIZE])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
+        ProgramHash(const char    data[ProgramHash_SIZE]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
+        ProgramHash(const uint8_t data[ProgramHash_SIZE]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
 
         template<typename _T>
             ProgramHash(_T t) : Uint160(t) {}	// constructor inherit from parent class
 
+        template<typename _Container>
+        static bool isValidCode(_Container code) {
+            if (code.size() == HEXADDRLEN &&
+                    string(code.begin(), code.begin()+PREFIXLEN)
+                        .compare(0, PREFIXLEN, FOOLPROOFPREFIX) == 0)
+            {
+                HASH sha256_once("sha256"), sha256_twice("sha256");
+                sha256_once.write(code.data(), PREFIXLEN+ProgramHash_SIZE);
+                string sum_once = sha256_once.read<basic_string,char>();
+
+                sha256_twice.write(sum_once.data(), sum_once.size());
+                string sum_twice = sha256_twice.read<basic_string,char>();
+
+                const string checksum(code.end()-SHA256CHKSUM, code.end());
+                return sum_twice.substr(0, SHA256CHKSUM).compare(checksum) == 0;
+            }
+            return false;
+        }
+
         const string toAddress() const {
             string bSlice = toBytes();
-            string v = {0x02, (char)0xb8, 0x25}; // TODO: const 0x02b825
+            string v(FOOLPROOFPREFIX);
             v.append(bSlice.begin(), bSlice.end());
 
             HASH sha256_once("sha256"), sha256_twice("sha256");
@@ -33,11 +66,21 @@ namespace ED25519 {
 
             sha256_twice.write(sum_once.data(), sum_once.size());
             string sum_twice = sha256_twice.read<basic_string,char>();
-            // TODO: const +4 as CHECKSUM_LEN
-            v.append(sum_twice.begin(), sum_twice.begin()+4); // Just used the first 4 MSB bytes as checksum
+            v.append(sum_twice.begin(), sum_twice.begin()+SHA256CHKSUM); // Just used the first 4 MSB bytes as checksum
 
-            //TODO base58 encode
             return Base58<string>::Enc(v);
+        }
+
+        static const ProgramHash fromAddress(const string& addr) {
+            auto code = Base58<shared_ptr<string>>::Dec(addr);
+
+            if (! isValidCode(*code)) {
+                fprintf(stderr, "%s is not a valid NKN wallet address\n", addr.c_str());
+                return ProgramHash(0);
+            }
+
+            const vector<char> data(code->begin()+PREFIXLEN, code->begin()+PREFIXLEN+ProgramHash_SIZE);   // code[3:23]
+            return ProgramHash(data);
         }
     } ProgramHash_t;
 
@@ -51,7 +94,7 @@ namespace ED25519 {
             HASH sha256("sha256");
             sha256.write(256/8);
             sha256.write(toBytes().c_str(), 256/8);
-            sha256.write(0xAC);
+            sha256.write(CHECKSIG);
             std::vector<char> sum256 = sha256.read<vector,char>();
 
             HASH ripemd160("ripemd160");

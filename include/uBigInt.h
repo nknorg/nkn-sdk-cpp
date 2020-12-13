@@ -87,7 +87,7 @@ public:
     uBigInt(const std::string& s) : ringSize("0x1" + std::string(2*N/8, '0'))   { DEBUG_U_BIG_INT FromHexString(s); } // throw
     uBigInt(const std::array<char,    N/8>& l) : ringSize("0x1" + std::string(2*N/8, '0')) { DEBUG_U_BIG_INT FromBytes(l.data(), N/8); }
     uBigInt(const std::array<uint8_t, N/8>& l) : ringSize("0x1" + std::string(2*N/8, '0')) { DEBUG_U_BIG_INT FromBytes(l.data(), N/8); }
-    uBigInt(const std::vector<char>& v);    // TODO
+    uBigInt(const std::vector<char>& v)    : ringSize("0x1" + std::string(2*N/8, '0')) { DEBUG_U_BIG_INT FromBytes(v.data(), v.size());}
     uBigInt(const std::vector<uint8_t>& v) : ringSize("0x1" + std::string(2*N/8, '0')) { DEBUG_U_BIG_INT FromBytes(v.data(), v.size());}
     uBigInt(const char* c, size_t len=N/8, FORMAT fmt=HEXSTR);
     uBigInt(const uint8_t l[N/8]) : ringSize("0x1" + std::string(2*N/8, '0')) { DEBUG_U_BIG_INT FromBytes(l, N/8); } // Not support fmt=HEXSTR for unsigned char*, since hexstr is ASCII scope
