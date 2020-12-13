@@ -32,9 +32,10 @@ struct Base58<C<Args...>> {
         return Enc(n);
     }
 
-    static C<Args...> Dec(const string& s);
+    static const C<Args...> Dec(const string& s);
 };
 
+// template implement for Base58<C<Args...>>::Enc
 template <template<typename...> class C, typename... Args>
 const C<Args...> Base58<C<Args...>>::Enc(const mpz_class& m) {
     assert(m>=0);    // NOT support negative number
@@ -47,6 +48,31 @@ const C<Args...> Base58<C<Args...>>::Enc(const mpz_class& m) {
     } while (q>0);
 
     return buf;
+}
+
+// template implement for Base58<C<Args...>>::Dec
+template <template<typename...> class C, typename... Args>
+const C<Args...> Base58<C<Args...>>::Dec(const string& s) {
+    uint32_t idx = 0;
+    mpz_class val, exp;
+    const string alphabet(b58_alphabet);
+
+    for (auto it=s.rbegin(); it!=s.rend(); it++, idx++) {
+        auto n = alphabet.find(*it);
+
+        if (n == string::npos) { /* TODO error log*/ break; }
+
+        mpz_ui_pow_ui(exp.get_mpz_t(), 58L, idx);   // exp = 58L ** idx
+        val += exp * n;
+    }
+    // for (auto& c: s)    // discarded. replace with rbegin for performance optimized
+        // val = val*58L + alphabet.find(c);
+
+    size_t cnt = 0;
+    auto ret = make_shared<C<Args...>>( mpz_sizeinbase(val.get_mpz_t(), 16), 0 );   // new C<Args...>(size_t, 0)
+    mpz_export((void*)ret->data(), &cnt, 1, sizeof(char), 0/*endian?*/, 0, val.get_mpz_t());
+    ret->resize(cnt);
+    return *ret;
 }
 
 // partial specialization for shared_ptr of general dynamic size container which has push_back API
@@ -66,6 +92,7 @@ struct Base58<shared_ptr<C<Args...>>> {
     static shared_ptr<C<Args...>> Dec(const string& s);
 };
 
+// template implement for Base58<shared_ptr<C<Args...>>>::Enc
 template <template<typename...> class C, typename... Args>
 shared_ptr<C<Args...>> Base58<shared_ptr<C<Args...>>>::Enc(const mpz_class& m) {
     assert(m>=0);    // NOT support negative number
@@ -76,6 +103,31 @@ shared_ptr<C<Args...>> Base58<shared_ptr<C<Args...>>>::Enc(const mpz_class& m) {
         unsigned long int r = mpz_fdiv_q_ui(q.get_mpz_t(), q.get_mpz_t(), 58L);
         ret->insert(ret->begin(), b58_alphabet[r]);
     } while (q>0);
+    return ret;
+}
+
+// template implement for Base58<shared_ptr<C<Args...>>>::Dec
+template <template<typename...> class C, typename... Args>
+shared_ptr<C<Args...>> Base58<shared_ptr<C<Args...>>>::Dec(const string& s) {
+    uint32_t idx = 0;
+    mpz_class val, exp;
+    const string alphabet(b58_alphabet);
+
+    for (auto it=s.rbegin(); it!=s.rend(); it++, idx++) {
+        auto n = alphabet.find(*it);
+
+        if (n == string::npos) { /* TODO error log*/ break; }
+
+        mpz_ui_pow_ui(exp.get_mpz_t(), 58L, idx);   // exp = 58L ** idx
+        val += exp * n;
+    }
+    // for (auto& c: s)    // discarded. replace with rbegin for performance optimized
+        // val = val*58L + alphabet.find(c);
+
+    size_t cnt = 0;
+    auto ret = make_shared<C<Args...>>( mpz_sizeinbase(val.get_mpz_t(), 16), 0 );   // new C<Args...>(size_t, 0)
+    mpz_export((void*)ret->data(), &cnt, 1, sizeof(char), 0/*endian?*/, 0, val.get_mpz_t());
+    ret->resize(cnt);
     return ret;
 }
 
