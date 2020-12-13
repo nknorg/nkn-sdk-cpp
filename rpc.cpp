@@ -129,3 +129,30 @@ json::value GetSubscription(const string& topic, const string& subscriber, const
                     kvPair_t("subscriber", subscriber)
                 }, cfg);
 }
+
+/******************
+ * JsonRPC method *
+ ******************/
+uint32_t JsonRPC::GetHeight() {
+    auto resp = Call("getlatestblockheight", {});
+    if (! resp.has_field("result")) { /* throw */ }
+    return resp["result"].as_number().to_uint32();
+}
+const string JsonRPC::GetBalance(const string& addr) {
+    auto resp = Call("getbalancebyaddr", {kvPair_t("address", addr)});
+    if (! resp.has_field("result")) { /* throw */ }
+    return resp["result"]["amount"].as_string();
+}
+uint64_t JsonRPC::GetNonce(const string& addr, bool txPool) {
+    auto resp = Call("getnoncebyaddr", {kvPair_t("address", addr)});
+    if (! resp.has_field("result")) { /* throw */ }
+
+    auto nonce = resp["result"]["nonce"].as_number().to_uint64();
+    auto nonceInTxPool = resp["result"]["nonceInTxPool"].as_number().to_uint64();
+    return (txPool && nonceInTxPool>nonce) ? nonceInTxPool : nonce;
+}
+uint32_t JsonRPC::GetSubscribersCount(const string& topic) {
+    auto resp = Call("getsubscriberscount", {kvPair_t("topic", topic)});
+    if (! resp.has_field("result")) { /* throw */ }
+    return resp["result"].as_number().to_uint32();
+}

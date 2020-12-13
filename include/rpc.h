@@ -47,6 +47,11 @@ public:
         // TODO http code != 200
         return resp.extract_json().get();
     }
+
+    uint32_t GetHeight();
+    const string GetBalance(const string& addr);
+    uint64_t GetNonce(const string& addr, bool txPool=true);
+    uint32_t GetSubscribersCount(const string& topic);
 };
 
 json::value RPCCall(const string& action, const initializer_list<kvPair_t>& params, const vector<const string>& cfg=DefaultRPCConfig);
