@@ -27,11 +27,6 @@ namespace ED25519 {
 
     typedef struct ProgramHash : public Uint160 {
         ProgramHash() : Uint160() {}
-        // construct from MSB fixed len char array
-        ProgramHash(char    data[ProgramHash_SIZE])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
-        ProgramHash(uint8_t data[ProgramHash_SIZE])       : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
-        ProgramHash(const char    data[ProgramHash_SIZE]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
-        ProgramHash(const uint8_t data[ProgramHash_SIZE]) : Uint160() { FromBytes(reinterpret_cast<const uint8_t*>(data), ProgramHash_SIZE); }
 
         template<typename _T>
             ProgramHash(_T t) : Uint160(t) {}	// constructor inherit from parent class
