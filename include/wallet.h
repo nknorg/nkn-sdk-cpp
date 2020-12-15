@@ -88,12 +88,12 @@ namespace Wallet{
     typedef struct Wallet Wallet_t;
     typedef struct Wallet {
         shared_ptr<WalletCfg_t> config;
-        shared_ptr<Account_t>   account;
+        shared_ptr<const Account_t>   account;
         shared_ptr<WalletData_t> walletData;
         string address;
 
         Wallet(shared_ptr<WalletCfg_t> cfg=NULL,
-                shared_ptr<Account_t> acc=NULL, shared_ptr<WalletData_t> data=NULL)
+                shared_ptr<const Account_t> acc=NULL, shared_ptr<WalletData_t> data=NULL)
             : config(cfg), account(acc), walletData(data), address( data ? data->Address : "") {}
 
         inline const Uint512          PrivKey()     { return account ? account->GetPrivateKeyFromSeed() : Uint512(0); }
@@ -103,7 +103,7 @@ namespace Wallet{
         inline string Address() { return address; }
     } Wallet_t;
 
-    shared_ptr<Wallet_t> NewWallet(shared_ptr<Account_t> acc, shared_ptr<WalletCfg_t> walletcfg);
+    shared_ptr<Wallet_t> NewWallet(shared_ptr<const Account_t> acc, shared_ptr<WalletCfg_t> walletcfg);
 
     shared_ptr<Wallet_t> WalletFromJSON(string jsonStr, shared_ptr<WalletCfg_t> cfg);
 };  // namespace Wallet

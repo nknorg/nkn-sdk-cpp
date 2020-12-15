@@ -32,7 +32,7 @@ namespace Wallet{
         DefaultSeedRPCServerAddr
     };
 
-    shared_ptr<Wallet_t> NewWallet(shared_ptr<Account_t> acc, shared_ptr<WalletCfg_t> walletcfg) {
+    shared_ptr<Wallet_t> NewWallet(shared_ptr<const Account_t> acc, shared_ptr<WalletCfg_t> walletcfg) {
         assert(acc != NULL);
         shared_ptr<WalletData_t> wd(NULL);
         auto cfg = WalletCfg::MergeWalletConfig(walletcfg);

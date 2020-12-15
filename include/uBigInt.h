@@ -14,6 +14,10 @@
 #include <vector>
 #include <array>
 
+namespace NKN {
+typedef std::string byteSlice;
+};
+
 template <size_t N> class uBigInt;
 
 #ifdef DEBUG
