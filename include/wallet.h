@@ -8,6 +8,8 @@
 #include "include/crypto/ed25519.h"
 #include "include/account.h"
 #include "include/walletData.h"
+#include "include/transaction.h"
+#include "include/rpc.h"
 
 #include "json/NKNCodec.h"
 
@@ -126,5 +128,40 @@ T& operator&(T& jsonCodec, NKN::Wallet::Wallet& w) {
 std::ostream& operator<<(std::ostream &s, const NKN::Wallet::Wallet& w);
 // Disable iStream operation of Wallet_t, instead with NKN::Wallet::WalletFromJSON(from vault keyStore)
 // std::istream& operator>>(std::istream &s, NKN::Wallet::Wallet& w);
+
+namespace NKN {
+namespace Wallet {
+    constexpr size_t StorageFactor = 100000000;
+    constexpr size_t MaximumPrecision = 8;
+
+    typedef struct NanoPay NanoPay_t;
+
+    Uint64 AmountStrToUint64(const string& amount);
+
+    struct NanoPay {
+        static constexpr size_t senderExpirationDelta   = 5;
+        static constexpr size_t receiverExpirationDelta = 3;
+
+        shared_ptr<JsonRPC>  rpcClient;
+        shared_ptr<Wallet_t> senderWallet;
+        ED25519::ProgramHash recipientProgramHash;
+        string   recipientAddress;
+        Uint64   id;
+        Uint64   fee;
+        Uint64   amount;
+        uint32_t duration;
+        uint32_t expiration;
+        // mutex TODO
+
+        inline string Recipient() { return recipientAddress; }
+
+        shared_ptr<pb::Transaction> IncrementAmount(const string& delta);
+
+        static shared_ptr<NanoPay_t> NewNanoPay(
+                shared_ptr<JsonRPC> rpcCli, shared_ptr<Wallet_t> senderWallet,
+                string recvAddr, Uint64 fee, uint32_t duration);
+    };
+};  // namespace Wallet
+};  // namespace NKN
 
 #endif  // __NKN_WALLET_H__

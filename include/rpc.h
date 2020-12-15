@@ -1,3 +1,6 @@
+#ifndef __NKN_RPC_H__
+#define __NKN_RPC_H__
+
 #include <iostream>
 #include <random>
 #include <vector>
@@ -13,7 +16,7 @@ using namespace std;
 using namespace web;
 
 extern const vector<const string> DefaultRPCConfig;
-const string GetRandomSeedRPCServerAddr(const vector<const string>&);
+const string GetRandomSeedRPCServerAddr(const vector<const string>& cfg = DefaultRPCConfig);
 
 typedef pair<string, json::value> kvPair_t;
 
@@ -64,3 +67,5 @@ uint32_t GetSubscribersCount(const string& topic, const vector<const string>& cf
 json::value GetSubscribers(const string& topic, int32_t offset, int32_t limit, bool meta, bool txPool, const vector<const string>& cfg=DefaultRPCConfig);
 json::value GetSubscription(const string& topic, const NKN::Uint256& subscriber, const vector<const string>& cfg=DefaultRPCConfig);  //TODO
 json::value GetSubscription(const string& topic, const string& subscriber, const vector<const string>& cfg=DefaultRPCConfig);
+
+#endif /* __NKN_RPC_H__ */
