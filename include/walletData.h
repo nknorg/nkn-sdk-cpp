@@ -123,6 +123,10 @@ namespace Wallet {
             return false;
         }
 
+        inline bool VerifyPassword(const string& pswd) {
+            return 0 == DecryptAccount(pswd)->ProgramHash.toAddress().compare(Address);
+        }
+
         shared_ptr<AES_Key_t> DecryptMasterKey(const string& pswd);
         shared_ptr<Account_t> DecryptAccount(const string& pswd);
     };

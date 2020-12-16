@@ -90,22 +90,22 @@ namespace Wallet{
     typedef struct Wallet Wallet_t;
     typedef struct Wallet {
         shared_ptr<WalletCfg_t> config;
-        shared_ptr<const Account_t>   account;
-        shared_ptr<WalletData_t> walletData;
-        string address;
+        const shared_ptr<const Account_t>   account;
+        const shared_ptr<WalletData_t> walletData;
+        const string address;
 
         Wallet(shared_ptr<WalletCfg_t> cfg=NULL,
                 shared_ptr<const Account_t> acc=NULL, shared_ptr<WalletData_t> data=NULL)
             : config(cfg), account(acc), walletData(data), address( data ? data->Address : "") {}
 
-        inline const Uint512          PrivKey()     { return account ? account->GetPrivateKeyFromSeed() : Uint512(0); }
-        inline ED25519::PubKey_t      PubKey()      { return account ? account->PublicKey   : ED25519::PubKey_t(0); }
-        inline ED25519::PrivKey_t     Seed()        { return account ? account->PrivateKey  : ED25519::PrivKey_t(0); }
-        inline ED25519::ProgramHash_t ProgramHash() { return account ? account->ProgramHash : ED25519::ProgramHash_t(0); }
-        inline string Address() { return address; }
+        inline const Uint512          PrivKey() const { return account ? account->GetPrivateKeyFromSeed() : Uint512(0); }
+        inline ED25519::PubKey_t      PubKey()  const { return account ? account->PublicKey   : ED25519::PubKey_t(0); }
+        inline ED25519::PrivKey_t     Seed()    const { return account ? account->PrivateKey  : ED25519::PrivKey_t(0); }
+        inline ED25519::ProgramHash_t ProgramHash() const { return account ? account->ProgramHash : ED25519::ProgramHash_t(0); }
+        inline string Address() const { return address; }
     } Wallet_t;
 
-    shared_ptr<Wallet_t> NewWallet(shared_ptr<const Account_t> acc, shared_ptr<WalletCfg_t> walletcfg);
+    shared_ptr<Wallet_t> NewWallet(shared_ptr<const Account_t> acc, shared_ptr<WalletCfg_t> walletcfg=NULL);
 
     shared_ptr<Wallet_t> WalletFromJSON(string jsonStr, shared_ptr<WalletCfg_t> cfg);
 };  // namespace Wallet
@@ -113,11 +113,10 @@ namespace Wallet{
 
 // Wallet_t json Parser
 template <typename T>
-T& operator&(T& jsonCodec, NKN::Wallet::Wallet& w) {
+T& operator&(T& jsonCodec, const NKN::Wallet::Wallet& w) {
     jsonCodec.StartObject();
     jsonCodec.Member("config") & *w.config;
     jsonCodec.Member("account") & *w.account;
-    auto p = w.walletData ? w.walletData: NULL;
     if (w.walletData)
         jsonCodec.Member("walletData") & *w.walletData;
     jsonCodec.Member("address") & w.address;
