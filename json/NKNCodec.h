@@ -154,11 +154,11 @@ public:
     virtual Encoder& StartArray(size_t* size = 0);
     virtual Encoder& EndArray();
 
-    virtual Encoder& operator&(bool& b);
-    virtual Encoder& operator&(unsigned& u);
-    virtual Encoder& operator&(int& i);
-    virtual Encoder& operator&(double& d);
-    virtual Encoder& operator&(std::string& s);
+    virtual Encoder& operator&(const bool& b);
+    virtual Encoder& operator&(const unsigned& u);
+    virtual Encoder& operator&(const int& i);
+    virtual Encoder& operator&(const double& d);
+    virtual Encoder& operator&(const std::string& s);
     template <size_t N>
     Encoder& operator&(const uBigInt<N> &bi);
     virtual Encoder& SetNull();

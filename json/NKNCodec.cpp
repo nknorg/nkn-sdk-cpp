@@ -328,27 +328,27 @@ Encoder& Encoder::EndArray() {
     return *this;
 }
 
-Encoder& Encoder::operator&(bool& b) {
+Encoder& Encoder::operator&(const bool& b) {
     WRITER->Bool(b);
     return *this;
 }
 
-Encoder& Encoder::operator&(unsigned& u) {
+Encoder& Encoder::operator&(const unsigned& u) {
     WRITER->Uint(u);
     return *this;
 }
 
-Encoder& Encoder::operator&(int& i) {
+Encoder& Encoder::operator&(const int& i) {
     WRITER->Int(i);
     return *this;
 }
 
-Encoder& Encoder::operator&(double& d) {
+Encoder& Encoder::operator&(const double& d) {
     WRITER->Double(d);
     return *this;
 }
 
-Encoder& Encoder::operator&(std::string& s) {
+Encoder& Encoder::operator&(const std::string& s) {
     WRITER->String(s.c_str(), static_cast<SizeType>(s.size()));
     return *this;
 }
