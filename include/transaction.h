@@ -4,6 +4,8 @@
 #include "pb/transaction.pb.h"
 
 #include "include/crypto/ed25519.h"
+#include "include/serialize.h"
+#include "include/account.h"
 
 using namespace std;
 
@@ -57,6 +59,41 @@ shared_ptr<pb::Transaction> NewDeleteNameTransaction(
 shared_ptr<pb::TransferName> NewTransferName(const string& registrant, const string& to, const string& name);
 shared_ptr<pb::Transaction> NewTransferNameTransaction(
         const string& registrant, const string& to, const string& name, const Uint64& nonce, const Uint64& fee);
+
+/*************
+ * Serialize *
+ *************/
+template <typename T>
+const string Serialize(const T& obj);
+template <typename T>
+inline const string Serialize(const T* obj)            { return Serialize<T>(*obj); }
+template <typename T>
+inline const string Serialize(const shared_ptr<T> obj) { return Serialize<T>(*obj); }
+
+template<>
+const string Serialize<pb::Payload>(const pb::Payload& pld);
+
+template<>
+const string Serialize<pb::Transaction>(const pb::Transaction& txn);
+
+/*************
+ * Signature *
+ *************/
+template <typename T>
+const byteSlice SignByAccount(const T& obj, const Wallet::Account& acc) {
+    HASH sha256("sha256");
+    sha256.write(Serialize<T>(obj));   // sha256 hash obj.Serialize
+    string sum256 = sha256.read<basic_string,char>();
+    return acc.Sign(sum256);    // sign sha256 sum
+}
+template <typename T>
+inline const byteSlice SignByAccount(const shared_ptr<T> obj, const Wallet::Account& acc) { return SignByAccount<T>(*obj, acc); }
+template <typename T>
+inline const byteSlice SignByAccount(const shared_ptr<T> obj, const shared_ptr<const Wallet::Account> acc) { return SignByAccount<T>(*obj, *acc); }
+template <typename T>
+inline const byteSlice SignByAccount(const T& obj, const shared_ptr<const Wallet::Account> acc) { return SignByAccount<T>(obj, *acc); }
+
+bool SignTransaction(shared_ptr<pb::Transaction> txn, const shared_ptr<const Wallet::Account> acc);
 
 }; // namespace TXN
 }; // namespace NKN

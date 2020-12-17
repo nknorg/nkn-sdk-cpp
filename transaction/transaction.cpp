@@ -3,6 +3,7 @@
 #include "include/crypto/ed25519.h"
 #include "pb/transaction.pb.h"
 #include "include/transaction.h"
+#include "include/account.h"
 
 using namespace std;
 
@@ -31,5 +32,40 @@ pb::Payload* PackPayload(const pb::PayloadType typ, ::google::protobuf::Message*
     pld->set_data(msg->SerializeAsString());
     return pld;
 }
+
+template<>
+const string Serialize<pb::Payload>(const pb::Payload& pld) {
+    auto data = pld.data();
+
+    string buf = SerializeToLE<uint32_t>((uint32_t)pld.type());
+    buf.append(SerializeVarUint((uint64_t)data.size()));
+    buf.append(data);
+    return buf;
+}
+
+template<>
+const string Serialize<pb::Transaction>(const pb::Transaction& txn) {
+    const pb::UnsignedTx& utxn = txn.unsigned_tx();
+    auto buf = Serialize<pb::Payload>(utxn.payload());
+
+    buf.append( SerializeToLE<uint64_t>(utxn.nonce()) );
+    buf.append( SerializeToLE<uint64_t>((uint64_t)utxn.fee()) );
+
+    const string& attr = utxn.attributes();
+    buf.append(SerializeVarUint((uint64_t)attr.size()));
+    buf.append(attr);
+    return buf;
+}
+
+bool SignTransaction(shared_ptr<pb::Transaction> txn, const shared_ptr<const Wallet::Account> acc) {
+    const byteSlice sign = SignByAccount(txn, acc);
+    pb::Program* pgm = txn->add_programs();
+    pgm->set_code(acc->Contract->Code);
+
+    uint8_t sign_len = (uint8_t)sign.size();
+    pgm->set_parameter(string(1, (char)sign_len) + sign);
+    return false;
+}
+
 }; // namespace TXN
 }; // namespace NKN
