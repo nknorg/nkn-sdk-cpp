@@ -18,7 +18,7 @@ namespace HEX {
         // 0x31~0x39, 0x41~0x46, 0x61~0x66
         return (hex<='9') ? hex & 0x0f : (hex+9) & 0x0f;
     }
-    string EncodeToString(const byteSlice& src) {
+    inline string EncodeToString(const byteSlice& src) {
         ostringstream oss;
         for (auto& c: src) {
             oss << setfill('0') << setw(2) << hex << (short)(c & 0xff);
@@ -27,19 +27,22 @@ namespace HEX {
     }
 
     // Not support '0x' prefix. Need to strip it ahead when invoke DecodeString
-    byteSlice DecodeString(const string& src) {
-        ostringstream oss;
+    template<template<typename...>class C=basic_string, typename... Args>
+    C<Args...> DecodeString(const string& src) {
+        typedef typename C<Args...>::value_type _CharT;
+
+        C<Args...> ret;
         size_t n = src.size();
 
         char h4bit, l4bit;
         const char* p = src.data();
 
         if (! is_hex_digit(*p)) // if first byte is not valid hex_digit
-            return oss.str();
+            return ret;
 
         if (0 != n%2) { // odd len case
             l4bit = *p++;
-            oss << hex2byte(l4bit);
+            ret.push_back((_CharT)l4bit);
         }
 
         while (p < &src[n]) {
@@ -47,9 +50,9 @@ namespace HEX {
                 break;
             h4bit = *p++;
             l4bit = *p++;
-            oss.put( hex2byte(h4bit)<<4 | hex2byte(l4bit) );
+            ret.push_back( (_CharT)(hex2byte(h4bit)<<4 | hex2byte(l4bit)) );
         }
-        return oss.str();
+        return ret;
     }
 };  // namespace HEX
 };  // namespace NKN
