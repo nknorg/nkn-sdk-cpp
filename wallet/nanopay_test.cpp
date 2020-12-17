@@ -21,5 +21,6 @@ int main(int, char* argv[]) {
     cout << npTxn << " Fee: " << npTxn->unsigned_tx().fee();
     cout << " Payload: " << HEX::EncodeToString(npTxn->unsigned_tx().payload().data()) << endl; // dump txn.Payload again
 
+    TXN::SignTransaction(npTxn, w->account);
     cout << HEX::EncodeToString( npTxn->SerializeAsString() ) << endl;  // txn serialize
 }
