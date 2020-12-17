@@ -16,7 +16,6 @@ namespace ED25519 {
     // 33 = len(base58.Encode( (2**192).Bytes() )),  192 = 8bit * (UINT160SIZE + SHA256CHKSUM)
     // (('N' * 58**35) + ('K' * 58**34) + ('N' * 58**33)) >> 192 = 0x02b824
     constexpr char    FOOLPROOFPREFIX[] = {0x02, (char)0xb8, 0x25};
-    constexpr uint8_t CHECKSIG = 0xAC;
 
     constexpr size_t ProgramHash_SIZE = 160/8;
     constexpr size_t ADDR_STR_LEN     = 36; // len of (2**192).Bytes() = 33, +3 'NKN' prefix
@@ -26,6 +25,11 @@ namespace ED25519 {
     constexpr size_t HEXADDRLEN       = PREFIXLEN + ProgramHash_SIZE + SHA256CHKSUM;
 
     typedef struct ProgramHash : public Uint160 {
+        typedef enum ProgramContextParameterType : uint8_t {
+            Signature = 0,
+            CHECKSIG  = 0xAC,
+        } ParameterType;
+
         ProgramHash() : Uint160() {}
 
         template<typename _T>
@@ -85,32 +89,57 @@ namespace ED25519 {
         template<typename _T>
             PubKey(_T t) : Uint256(t) {}
 
-        ProgramHash_t toProgramHash() const {
+        inline ProgramHash_t toProgramHash() const {
+            return ToCodeHash(CreateSignatureProgramCode<basic_string,char>());
+        }
+
+        inline bool Verify(const vector<uint8_t>& msg,const byteSlice& sig) const { return Verify(msg.data(), msg.size(), sig); }
+        inline bool Verify(const vector<char>& msg,   const byteSlice& sig) const { return Verify((uint8_t*)msg.data(), msg.size(), sig); }
+        inline bool Verify(const string& msg,         const byteSlice& sig) const { return Verify((uint8_t*)msg.data(), msg.size(), sig); }
+        inline bool Verify(const char* msg, size_t n, const byteSlice& sig) const { return Verify((uint8_t*)msg, n, sig); }
+        bool Verify(const uint8_t* msg, size_t n, const byteSlice& signature) const {
+            string pk = toBytes();
+            return (crypto_sign_BYTES == signature.size()) &&
+                (0 == crypto_sign_verify_detached((uint8_t*)signature.data(), msg, n, (uint8_t*)pk.data()));
+        }
+
+        inline const ProgramHash_t ToCodeHash(const void* code, size_t n) const;    // TODO if necessary
+        template<template<typename...>class C=basic_string, typename... Args>
+        inline const ProgramHash_t ToCodeHash(const C<Args...>& code) const {
             HASH sha256("sha256");
-            sha256.write(256/8);
-            sha256.write(toBytes().c_str(), 256/8);
-            sha256.write(CHECKSIG);
-            std::vector<char> sum256 = sha256.read<vector,char>();
+            sha256.write<C,Args...>(code);
+            vector<char> sum256 = sha256.read<vector,char>();
 
             HASH ripemd160("ripemd160");
-            ripemd160.write(sum256.data(), sum256.size());
-            std::vector<uint8_t> sum160 = ripemd160.read<vector,uint8_t>();
+            ripemd160.write(sum256);
+            return ProgramHash_t(ripemd160.read<vector,uint8_t>());
+        }
 
-            return ProgramHash_t(sum160);
+        template<template<typename...>class C=basic_string, typename... Args>
+        inline const C<Args...> CreateSignatureProgramCode() const {
+            typedef typename C<Args...>::value_type _CharT;
+
+            C<Args...> ret;
+            const byteSlice pk = toBytes();
+
+            ret.push_back((_CharT)pk.size());
+            ret.insert(ret.end(), make_move_iterator(pk.begin()), make_move_iterator(pk.end()));
+            ret.push_back((_CharT)ProgramHash_t::ParameterType::CHECKSIG);
+            return ret;
         }
     } PubKey_t;
 
     typedef struct PrivKey : public Uint256 {
-        PrivKey() : PrivKey(*Uint256::Random<std::shared_ptr<Uint256>>()) {} // generated PrivKey from random
+        PrivKey() : PrivKey(*Uint256::Random<shared_ptr<Uint256>>()) {} // generated PrivKey from random
         PrivKey(const PrivKey& k) : Uint256(k) {}
         template<typename _T>
             PrivKey(_T t) : Uint256(t) {}
 
-        ~PrivKey() { FromHexString(std::string(2*256/8, 0)); }    // Clean private key in memory
+        ~PrivKey() { FromHexString(string(2*256/8, 0)); }    // Clean private key in memory
 
         const PubKey_t PublicKey() const {
-            std::basic_string<uint8_t> pk(crypto_sign_PUBLICKEYBYTES, 0);
-            std::basic_string<uint8_t> sk(crypto_sign_SECRETKEYBYTES, 0);
+            basic_string<uint8_t> pk(crypto_sign_PUBLICKEYBYTES, 0);
+            basic_string<uint8_t> sk(crypto_sign_SECRETKEYBYTES, 0);
 
             int not_ok = crypto_sign_seed_keypair(const_cast<uint8_t*>(pk.c_str()), const_cast<uint8_t*>(sk.c_str()),
                     reinterpret_cast<const uint8_t*>(toBytes().c_str()));
@@ -122,6 +151,23 @@ namespace ED25519 {
             mpz_class n;
             mpz_import(n.get_mpz_t(), pk.size(), 1/*MSB*/, sizeof(uint8_t), 0/*endian*/, 0, pk.data());
             return PubKey_t(n);
+        }
+
+        inline const byteSlice Sign(const vector<uint8_t>& msg) const { return Sign(msg.data(), msg.size()); }
+        inline const byteSlice Sign(const vector<char>& msg)    const { return Sign((uint8_t*)msg.data(), msg.size()); }
+        inline const byteSlice Sign(const string& msg)          const { return Sign((uint8_t*)msg.data(), msg.size()); }
+        inline const byteSlice Sign(const char* msg, size_t n)  const { return Sign((uint8_t*)msg, n); }
+        const byteSlice Sign(const uint8_t* msg, size_t n) const {
+            // Calc secretKey from seed
+            const string seed = toBytes();
+            basic_string<uint8_t> sk(crypto_sign_SECRETKEYBYTES, 0);
+            basic_string<uint8_t> pk(crypto_sign_PUBLICKEYBYTES, 0);
+            int ok = crypto_sign_seed_keypair((uint8_t*)pk.data(), (uint8_t*)sk.data(), (uint8_t*)seed.data());
+            assert(0 == ok);
+
+            string signature(crypto_sign_BYTES, 0);
+            crypto_sign_detached((uint8_t*)signature.data(), NULL, msg, n, (uint8_t*)sk.data());
+            return signature;
         }
     } PrivKey_t;
 }; // namespace ED25519

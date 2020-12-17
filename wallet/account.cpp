@@ -7,9 +7,9 @@ using namespace std;
 namespace NKN {
 namespace Wallet {
     Account::Account()   // generated PrivKey from random
-        : PrivateKey(), PublicKey(PrivateKey.PublicKey()), ProgramHash(PublicKey.toProgramHash()) {}
+        : PrivateKey(), PublicKey(PrivateKey.PublicKey()), ProgramHash(PublicKey.toProgramHash()), Contract(CreateSignatureProgramContext()) {}
     Account::Account(const ED25519::PrivKey_t& seed)   // generated PrivKey from given seed
-        : PrivateKey(seed), PublicKey(PrivateKey.PublicKey()), ProgramHash(PublicKey.toProgramHash()) {}
+        : PrivateKey(seed), PublicKey(PrivateKey.PublicKey()), ProgramHash(PublicKey.toProgramHash()), Contract(CreateSignatureProgramContext()) {}
 };  // namespace Wallet
 };  // namespace NKN
 
