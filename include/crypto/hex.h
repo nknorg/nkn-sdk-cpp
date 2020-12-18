@@ -18,6 +18,14 @@ namespace HEX {
         // 0x31~0x39, 0x41~0x46, 0x61~0x66
         return (hex<='9') ? hex & 0x0f : (hex+9) & 0x0f;
     }
+    inline string EncodeToString(const void* src, size_t n) {
+        ostringstream oss;
+        const uint8_t* p = (const uint8_t*)src;
+        for (size_t i=0; i<n; i++,p++)
+            oss << setfill('0') << setw(2) << hex << (short)(*p);
+        return oss.str();
+    }
+    inline string EncodeToString(const char* src) { return EncodeToString(src, strlen(src)); }
     inline string EncodeToString(const byteSlice& src) {
         ostringstream oss;
         for (auto& c: src) {
