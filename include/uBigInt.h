@@ -367,6 +367,7 @@ namespace NKN{
     typedef uBigInt<64>  Uint64;
     typedef uBigInt<128> Uint128;
     typedef uBigInt<160> Uint160;
+    typedef uBigInt<192> Uint192;
     typedef uBigInt<256> Uint256;
     typedef uBigInt<512> Uint512;
 };  // namespace NKN
