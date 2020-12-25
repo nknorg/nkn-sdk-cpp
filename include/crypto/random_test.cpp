@@ -1,4 +1,8 @@
 #include <iostream>
+#include <iomanip>
+#include <vector>
+#include <deque>
+#include <list>
 
 #include "include/crypto/random.h"
 
@@ -6,11 +10,25 @@ using namespace std;
 using namespace NKN;
 
 int main() {
-    cout << Random<Uint160>::read() << endl;
-    cout << Random<Uint160>::read(5) << endl;
+    cout << "string: " << Random<string>()(8) << endl;
+    cout << "Int: " << Random<int>()(4) << endl;
+    cout << "char: " << Random<char>()() << endl;
+    cout << "LLU: " << Random<uint64_t>()() << endl;
 
-    cout << *Random<shared_ptr<Uint256>>::read() << endl;
-    cout << *Random<shared_ptr<Uint256>>::read(6) << endl;
+    cout << "vector: ";
+    auto vec = Random<vector<char>>()(8);
+    for (auto& c: vec) {
+        cout << setfill('0') << setw(2) << hex << c;
+    }
+    cout << endl;
 
-    cout << Random<string>::read(8) << endl;
+    auto deq = Random<deque<char>>()(1024);
+    auto lst = Random<list<char>>()(1024);
+
+    auto arr = Random<array<char,256>>()(16);
+    cout << string(arr.cbegin(), arr.cend()) << endl;
+    // cout << "char*: " << Random<char*>()() << endl;  // should trigger primitive type check error
+
+    cout << "Uint256: " << Random<Uint256>()() << endl;
+    cout << "shared_ptr<Uint160>: " << *(Random<shared_ptr<Uint160>>()()) << endl;
 }
