@@ -4,3 +4,6 @@
 [submodule "thirdparty/cpprestsdk"]
 	path = thirdparty/cpprestsdk
 	url = https://github.com/Microsoft/cpprestsdk
+[submodule "thirdparty/libsodium"]
+	path = thirdparty/libsodium
+	url = https://github.com/jedisct1/libsodium
