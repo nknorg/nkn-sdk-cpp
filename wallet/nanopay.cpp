@@ -5,6 +5,7 @@
 #include "include/wallet.h"
 #include "include/rpc.h"
 #include "include/transaction.h"
+#include <system_error>
 
 using namespace std;
 
@@ -31,11 +32,22 @@ namespace Wallet {
         return Uint64(val*exp);
     }
 
-    shared_ptr<pb::Transaction> NanoPay::IncrementAmount(const string& delta) {
-        if (rpcClient == NULL)  // TODO uninitialized error
-            return NULL;
+    shared_ptr<pb::Transaction> NanoPay::IncrementAmount(const string& delta, std::error_code& ecRef) {
+        if (rpcClient == NULL){  // TODO uninitialized error
+            ecRef = make_error_code(std::errc::not_connected);
+            return nullptr;
+        }
 
-        uint32_t height = rpcClient->GetHeight();
+        uint32_t height = 0;
+        try {
+            height = rpcClient->GetHeight();
+        } catch (const std::exception& ex) {
+            fprintf(stderr, "JsonRPC met exception: %s\n", ex.what());
+            if (0 == expiration) {
+                ecRef = make_error_code(std::errc::timed_out);
+                return nullptr;
+            }
+        }
 
         // TODO mutex lock
         if ( 0 == expiration || expiration <= height+senderExpirationDelta ) {

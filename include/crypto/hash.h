@@ -31,7 +31,7 @@ namespace NKN{
         inline bool write(const void* msg, size_t n);
         inline bool write(const uint8_t c) { return write(&c, sizeof(uint8_t)); }
         template<template<typename...>class C, typename... Args>
-        inline bool write(C<Args...> msg)  { return write(msg.data(), msg.size()); };
+        inline bool write(const C<Args...>& msg)  { return write(msg.data(), msg.size()); };
 
         // read method
         template<template<typename...>class C, typename... Args>
@@ -43,6 +43,10 @@ namespace NKN{
         template<template <typename> class Ptr, template<size_t> class Uint, size_t N>
         Ptr<Uint<N>> read();// template read() for shared_ptr<uBigInt<N>>
 
+        template<template<size_t>class Uint, size_t N>
+        inline Uint<N> sum(const string& data) {
+            return write(data) ? read<Uint,N>() : Uint<N>();
+        }
     private:
         string algo;
         EVP_MD_CTX* ctx;

@@ -80,6 +80,13 @@ namespace Wallet {
                     PublicKey.ToCodeHash(PublicKey.toBytes())
                 );
         }
+
+        inline const Uint256 GetCurvePrivKey() const {
+            const string signPriv = GetPrivateKeyFromSeed().toBytes();
+            vector<uint8_t> curvePriv(crypto_scalarmult_curve25519_BYTES, 0);
+            crypto_sign_ed25519_sk_to_curve25519(curvePriv.data(), (uint8_t*)signPriv.data());
+            return Uint256(curvePriv);
+        }
     };
 };  // namespace Wallet
 };  // namespace NKN

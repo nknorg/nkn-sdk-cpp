@@ -154,7 +154,7 @@ namespace Wallet {
 
         inline string Recipient() { return recipientAddress; }
 
-        shared_ptr<pb::Transaction> IncrementAmount(const string& delta);
+        shared_ptr<pb::Transaction> IncrementAmount(const string& delta, std::error_code& ecRef);
 
         static shared_ptr<NanoPay_t> NewNanoPay(
                 shared_ptr<JsonRPC> rpcCli, shared_ptr<Wallet_t> senderWallet,
