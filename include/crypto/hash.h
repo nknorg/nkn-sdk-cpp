@@ -40,12 +40,16 @@ namespace NKN{
         template<template<size_t>class Uint, size_t N>
         Uint<N> read();     // template read() for uBigInt<N>
 
-        template<template <typename> class Ptr, template<size_t> class Uint, size_t N>
+        template<template <typename...> class Ptr, template<size_t> class Uint, size_t N>
         Ptr<Uint<N>> read();// template read() for shared_ptr<uBigInt<N>>
 
         template<template<size_t>class Uint, size_t N>
         inline Uint<N> sum(const string& data) {
             return write(data) ? read<Uint,N>() : Uint<N>();
+        }
+        template<template <typename...> class Ptr, template<size_t>class Uint, size_t N>
+        inline Ptr<Uint<N>> sum(const string& data) {
+            return write(data) ? read<Ptr,Uint,N>() : nullptr;
         }
     private:
         string algo;
@@ -74,7 +78,7 @@ namespace NKN{
         return Uint<N>(buf, md_len, Uint<N>::BINARY);
     }
 
-    template<template <typename> class Ptr, template<size_t> class Uint, size_t N>
+    template<template <typename...> class Ptr, template<size_t> class Uint, size_t N>
     Ptr<Uint<N>> HASH::read() {
         char buf[EVP_MAX_MD_SIZE];
         uint32_t md_len = _flush(buf);
