@@ -184,4 +184,21 @@ Encoder& Encoder::operator&(const uBigInt<N> &bi){
 };  // namespace JSON
 };  // namespace NKN
 
+/* Implement insertion/extration template specialized for WalletData_t
+ * Otherwise it will match default insertion & extration from json/NKNCodec.h */
+/* template <typename T>
+std::ostream& operator<<(std::ostream &s, const T& wd) {
+    NKN::JSON::Encoder out;
+    out & const_cast<T&>(wd);
+    out & const_cast<T&>(wd);
+    return s << out.GetString();
+};
+
+template <typename T>
+std::istream& operator>>(std::istream &s, T& wd) {
+    std::string json(std::istreambuf_iterator<char>(s), *(new std::istreambuf_iterator<char>()));
+    NKN::JSON::Decoder dec(json);
+    dec & wd;
+    return s;
+} */
 #endif // ARCHIVER_H__
