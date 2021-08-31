@@ -64,10 +64,11 @@ shared_ptr<json::value> NewRequest(const string& method, const json::value& para
     return ret;
 }
 
-json::value RPCCall(const string& action, const initializer_list<kvPair_t>& params, const vector<const string>& cfg) {
+json::value RPCCall(const string& action, const initializer_list<kvPair_t>& params, const vector<string>& cfg) {
     JsonRPC cli(GetRandomSeedRPCServerAddr(cfg));
     auto resp = cli.Call(action, params).as_object();
 
+    // if (resp.has_field("error"))
     if (resp.find("error") != resp.cend()) {
         auto err = resp["error"];
         cerr << __PRETTY_FUNCTION__ << " got error resp:\n" << err << endl;
@@ -76,7 +77,7 @@ json::value RPCCall(const string& action, const initializer_list<kvPair_t>& para
     return resp["result"];
 }
 
-json::value RPCCall(const string& action, const json::value& params, const vector<const string>& cfg) {
+json::value RPCCall(const string& action, const json::value& params, const vector<string>& cfg) {
     JsonRPC cli(GetRandomSeedRPCServerAddr(cfg));
     auto resp = cli.Call(action, params).as_object();
 
@@ -88,31 +89,31 @@ json::value RPCCall(const string& action, const json::value& params, const vecto
     return resp["result"];
 }
 
-uint32_t GetHeight(const vector<const string>& cfg) {
+uint32_t GetHeight(const vector<string>& cfg) {
     auto resp = RPCCall("getlatestblockheight", {}, cfg);
     return resp.as_number().to_uint32();
 }
 
-const string GetBalance(const string& addr, const vector<const string>& cfg) {
+const string GetBalance(const string& addr, const vector<string>& cfg) {
     auto resp = RPCCall("getbalancebyaddr", {kvPair_t("address", addr)}, cfg);
     return resp["amount"].as_string();
 
 }
 
-uint64_t GetNonce(const string& addr, bool txPool, const vector<const string>& cfg) {
+uint64_t GetNonce(const string& addr, bool txPool, const vector<string>& cfg) {
     auto resp = RPCCall("getnoncebyaddr", {kvPair_t("address", addr)}, cfg);
     auto nonce = resp["nonce"].as_number().to_uint64();
     auto nonceInTxPool = resp["nonceInTxPool"].as_number().to_uint64();
     return (txPool && nonceInTxPool>nonce) ? nonceInTxPool : nonce;
 }
 
-uint32_t GetSubscribersCount(const string& topic, const vector<const string>& cfg) {
+uint32_t GetSubscribersCount(const string& topic, const vector<string>& cfg) {
     auto resp = RPCCall("getsubscriberscount", {kvPair_t("topic", topic)}, cfg);
     return resp.as_number().to_uint32();
 }
 
 json::value GetSubscribers(const string& topic, int32_t offset, int32_t limit,
-        bool meta, bool txPool, const vector<const string>& cfg) {
+        bool meta, bool txPool, const vector<string>& cfg) {
     return RPCCall("getsubscribers", {
                     kvPair_t("topic",  topic),
                     kvPair_t("offset", offset),
@@ -122,12 +123,31 @@ json::value GetSubscribers(const string& topic, int32_t offset, int32_t limit,
                 }, cfg);
 }
 
-json::value GetSubscription(const string& topic, const NKN::Uint256& subscriber, const vector<const string>& cfg);  //TODO
-json::value GetSubscription(const string& topic, const string& subscriber, const vector<const string>& cfg) {
+json::value GetSubscription(const string& topic, const NKN::Uint256& subscriber, const vector<string>& cfg);  //TODO
+json::value GetSubscription(const string& topic, const string& subscriber, const vector<string>& cfg) {
     return RPCCall("getsubscription", {
                     kvPair_t("topic", topic),
                     kvPair_t("subscriber", subscriber)
                 }, cfg);
+}
+
+template <>
+json::value GetWSAddress<json::value>(const string& addr, const vector<string>& cfg) {
+    // return RPCCall("getwsaddr", {kvPair_t("address", addr)}, cfg);
+    auto resp = RPCCall("getwsaddr", {kvPair_t("address", addr)}, cfg);
+    cout << __PRETTY_FUNCTION__ << " GetWSAddress resp:\n" << resp << endl;
+    return resp;
+}
+template <>
+shared_ptr<Node> GetWSAddress<shared_ptr<Node>>(const string& addr, const vector<string>& cfg) {
+    // return make_shared<Node>(RPCCall("getwsaddr", {kvPair_t("address", addr)}, cfg));
+    auto resp = RPCCall("getwsaddr", {kvPair_t("address", addr)}, cfg);
+    cout << __PRETTY_FUNCTION__ << " GetWSAddress resp:\n" << resp << endl;
+    if (resp.has_field("code") && resp.at("code").is_number()) {
+        if (resp[U("code")] != 0)   // error
+            return nullptr;
+    }
+    return make_shared<Node>(resp);
 }
 
 /******************
