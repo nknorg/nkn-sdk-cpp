@@ -1,13 +1,27 @@
 #ifndef __NKN_SERIALIZE__
 #define __NKN_SERIALIZE__
 
+#include <iostream>
 #include <string>
 
-using namespace std;
+#include "include/byteslice.h"
 
 namespace NKN {
+using namespace std;
 
-typedef std::string byteSlice;
+/*************
+ * Serialize *
+ *************/
+template <typename T>
+const string Serialize(const T& obj);
+template <typename T>
+inline const string Serialize(const T* obj)            { return Serialize<T>(*obj); }
+template <typename T>
+inline const string Serialize(const shared_ptr<T> obj) { return Serialize<T>(*obj); }
+template<>
+inline const string Serialize<bool>(const bool& v) {
+    return v ? string(1, (char)1) : string(1, char(0));
+}
 
 /* *****
  * Common Serializer with host-endianness-independent (whatever LE/BE HOST)
@@ -56,5 +70,12 @@ inline typename enable_if<
     return out;
 }
 
+template <template<typename...>class Container, class CharT, class Traits=char_traits<CharT>>
+const string Serialize(const Container<CharT>& ctn) {
+    ostringstream os;
+    os << SerializeVarUint((uint64_t)ctn.size());
+    std::copy(ctn.begin(), ctn.end(), ostream_iterator<char>(os));
+    return os.str();
+}
 };  // namespace NKN
 #endif  // __NKN_SERIALIZE__
