@@ -14,10 +14,6 @@
 #include <vector>
 #include <array>
 
-namespace NKN {
-typedef std::string byteSlice;
-};
-
 template <size_t N> class uBigInt;
 
 #ifdef DEBUG
@@ -63,12 +59,11 @@ private:
     mpz_class val;
 
 protected:
-    inline bool startsWith(const std::string& s, const std::string& prefix) {
-        return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
-    }
 
 public:
     // static constexpr char MAX[] = { '1', [1 ... 2*N/8] = '0' };
+    // static constexpr size_t BYTESIZE = N/8;  // C++14
+
     enum FORMAT {
         HEXSTR = 0,
         BINARY = 1,
@@ -141,7 +136,7 @@ public:
     inline operator bool() const { return val != 0; }
 
     /* string conversion */
-    void FromHexString(const std::string& s);
+    bool FromHexString(const std::string& s);
     inline void FromBytes(const char* src,    size_t n = N/8, uBigInt::ENDIAN endian = uBigInt::MSB) {
         FromBytes(reinterpret_cast<const uint8_t*>(src), n, endian);
     }
@@ -164,12 +159,19 @@ public:
     // unsigned int toUnsignedInt() const;
     // unsigned long toUnsignedLong() const;
     // unsigned long long toUnsignedLongLong() const;
+    inline static bool startsWith(const std::string& s, const std::string& prefix) {
+        return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
+    }
+
+    inline static bool isValid(const std::string& s) {
+        return startsWith(s, "0x") ? mpz_class().set_str(s, 0) == 0 : mpz_class().set_str(s, 16) == 0;
+    }
 
     template <typename T>   /* T could be any container with push_back method */
     static T Random() {
         std::random_device rd;
         T buf;
-        for(int i=0; i<N/8; i++){
+        for(size_t i=0; i<N/8; i++){
             buf.push_back(rd());
         }
         return buf;
@@ -180,7 +182,7 @@ public:
         std::vector<uint8_t> buf;
         buf.reserve(N/8);
 
-        for(int i=0; i<N/8; i++){
+        for(size_t i=0; i<N/8; i++){
             buf.emplace_back((uint8_t)rd());
         }
 
@@ -194,7 +196,7 @@ public:
         std::vector<uint8_t> buf;
         buf.reserve(N/8);
 
-        for(int i=0; i<N/8; i++){
+        for(size_t i=0; i<N/8; i++){
             buf.emplace_back((uint8_t)rd());
         }
 
@@ -204,6 +206,7 @@ public:
     }
 };
 // template <size_t N> constexpr char uBigInt<N>::MAX[];
+// template <size_t N> static constexpr size_t BYTESIZE = N/8;  // C++14
 
 template <size_t N>
 uBigInt<N>::uBigInt(const char* c, size_t len, FORMAT fmt) : ringSize("0x1" + std::string(2*N/8, '0')) {
@@ -294,15 +297,17 @@ const uBigInt<N>& uBigInt<N>::operator%=(const uBigInt<N>& rhs) { // throw
 }
 
 template <size_t N>
-void uBigInt<N>::FromHexString(const std::string& s) {
+bool uBigInt<N>::FromHexString(const std::string& s) {
     DEBUG_U_BIG_INT
+    int err = 0;
 
     // TODO: Check invalid hex char
-    startsWith(s, "0x") ? val.set_str(s, 0) : val.set_str(s, 16);
+    err = startsWith(s, "0x") ? val.set_str(s, 0) : val.set_str(s, 16);
 
     val %= ringSize;
     if (val < 0)
         val += ringSize;
+    return err==0;
 }
 
 template <size_t N>
@@ -364,6 +369,7 @@ std::ostream& operator<<(std::ostream &s, const uBigInt<N> &n) {
 }
 
 namespace NKN{
+    typedef uBigInt<32>  Uint32;
     typedef uBigInt<64>  Uint64;
     typedef uBigInt<128> Uint128;
     typedef uBigInt<160> Uint160;

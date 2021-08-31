@@ -7,15 +7,15 @@
 
 using namespace std;
 
-extern const vector<const string> DefaultRPCConfig;
-const vector<const string> DefaultRPCConfig = {{"http://seed.nkn.org:30003"}};
+extern const vector<string> DefaultRPCConfig;
+const vector<string> DefaultRPCConfig = {{"http://seed.nkn.org:30003"}};
 
 // Copy construction from const DefaultRPCConfig and return a mutable RPCConfig
-inline vector<const string> GetDefaultRPCConfig() {
-    return vector<const string>(DefaultRPCConfig.begin(), DefaultRPCConfig.end());
+inline vector<string> GetDefaultRPCConfig() {
+    return vector<string>(DefaultRPCConfig.begin(), DefaultRPCConfig.end());
 }
 
-const string GetRandomSeedRPCServerAddr(const vector<const string>& cfg) {
+const string GetRandomSeedRPCServerAddr(const vector<string>& cfg) {
     random_device rd;
     if (0 == cfg.size()) {    // TODO Empty cfg warning
         cerr << "RPC config is Empty. " << cfg.size() << endl;
