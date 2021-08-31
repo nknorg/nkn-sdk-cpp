@@ -17,33 +17,41 @@ using namespace std;
 
 namespace NKN {
 
-const vector<string> DefaultSeedRPCServerAddr = {"http://seed.nkn.org:30003"};
-
 namespace Wallet {
+    const vector<string> DefaultSeedRPCServerAddr = {"http://seed.nkn.org:30003"};
+
     typedef struct WalletCfg WalletCfg_t;
     extern const WalletCfg_t DefaultWalletConfig;
     typedef struct WalletCfg {
         AES_IV_t        IV;
         AES_Key_t MasterKey;
         string           Password;
+        int32_t          RPCTimeout;
+        int32_t          RPCConcurrency;
         ScryptCfg_t      ScryptConfig;
         vector<string>   SeedRPCServerAddr;
 
-        // WalletCfg() {}
-        inline WalletCfg(const WalletCfg_t& cfg) :
-                IV(cfg.IV), MasterKey(cfg.MasterKey), Password(cfg.Password),
-                ScryptConfig(cfg.ScryptConfig), SeedRPCServerAddr(cfg.SeedRPCServerAddr) {}
-        inline WalletCfg(AES_IV_t iv, AES_Key_t mstKey, string pswd,
-                const ScryptCfg_t& cfg=DefaultScryptConfig,
-                const vector<string>& rpcSrvs=DefaultSeedRPCServerAddr) :
-                    IV(iv), MasterKey(mstKey), Password(pswd), ScryptConfig(cfg), SeedRPCServerAddr(rpcSrvs) {}
+        WalletCfg() = default;
+        WalletCfg(const WalletCfg_t& ) = default;
+        WalletCfg& operator=(const WalletCfg_t&) = default;
+
+        inline WalletCfg(AES_IV_t iv, AES_Key_t mstKey, string pswd, int32_t timeout=10*1000, int32_t concurrency=1,
+                const ScryptCfg_t& cfg=DefaultScryptConfig, const vector<string>& rpcSrvs=DefaultSeedRPCServerAddr)
+            : IV(iv), MasterKey(mstKey), Password(pswd), RPCTimeout(timeout), RPCConcurrency(concurrency),
+            ScryptConfig(cfg), SeedRPCServerAddr(rpcSrvs) {}
+
+        inline WalletCfg(AES_IV_t iv, AES_Key_t mstKey, string pswd, int32_t timeout=10*1000, int32_t concurrency=1,
+                shared_ptr<ScryptCfg_t> cfg=nullptr, shared_ptr<vector<string>> rpcSrvs=nullptr)
+            : IV(iv), MasterKey(mstKey), Password(pswd), RPCTimeout(timeout), RPCConcurrency(concurrency)
+              , ScryptConfig(cfg ? *cfg : DefaultScryptConfig)
+              , SeedRPCServerAddr(rpcSrvs ? *rpcSrvs : DefaultSeedRPCServerAddr) {}
 
         inline static const WalletCfg_t& GetDefaultWalletConfig() { return DefaultWalletConfig; }
         const string GetRandomSeedRPCServerAddr();
 
         // MergeWalletConfig merges a given wallet config with the default wallet config recursively. Any non zero value fields will override the default config.
         static shared_ptr<WalletCfg_t> MergeWalletConfig(const shared_ptr<const WalletCfg_t> cfg) {
-            shared_ptr<WalletCfg_t> ret(new WalletCfg_t(DefaultWalletConfig));
+            auto ret = make_shared<WalletCfg_t>(DefaultWalletConfig);
             if (cfg) {
                 if(cfg->IV)                              ret->IV = cfg->IV;
                 if(cfg->MasterKey)                       ret->MasterKey = cfg->MasterKey;
@@ -54,7 +62,6 @@ namespace Wallet {
             return ret;
         }
 
-        const WalletCfg_t& operator=(const WalletCfg_t& cfg);
         WalletCfg_t& operator&&(const WalletCfg_t& cfg);        // TODO Merge & Update myself with given cfg
         WalletCfg_t& operator&&(const WalletCfg_t& cfg) const;  // TODO Merge cfg with myself and return a new one
         bool isContainedServAddr(const string& s);  // TODO
@@ -94,9 +101,9 @@ namespace Wallet{
         const shared_ptr<WalletData_t> walletData;
         const string address;
 
-        Wallet(shared_ptr<WalletCfg_t> cfg=NULL,
-                shared_ptr<const Account_t> acc=NULL, shared_ptr<WalletData_t> data=NULL)
-            : config(cfg), account(acc), walletData(data), address( data ? data->Address : "") {}
+        Wallet(shared_ptr<const Account_t> acc=NULL,
+                shared_ptr<WalletCfg_t> cfg=NULL, shared_ptr<WalletData_t> data=NULL)
+            : config(cfg), account(acc), walletData(data), address( account ? account->WalletAddress() : "") {}
 
         inline const Uint512          PrivKey() const { return account ? account->GetPrivateKeyFromSeed() : Uint512(0); }
         inline ED25519::PubKey_t      PubKey()  const { return account ? account->PublicKey   : ED25519::PubKey_t(0); }

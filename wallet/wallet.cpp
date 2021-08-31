@@ -15,19 +15,12 @@ namespace Wallet{
         return SeedRPCServerAddr[r];
     }
 
-    const WalletCfg_t& WalletCfg::operator=(const WalletCfg_t& cfg) {
-        IV = cfg.IV;
-        MasterKey = cfg.MasterKey;
-        Password = cfg.Password;
-        ScryptConfig = cfg.ScryptConfig;
-        SeedRPCServerAddr = cfg.SeedRPCServerAddr;
-        return *this;
-    }
-
     const WalletCfg_t DefaultWalletConfig {
-        "",
-        "",
-        "",
+        0,      // IV
+        0,      // MasterKey
+        "",     // Password
+        1000,   // RPCTimeout
+        1,      // RPCConcurrency
         DefaultScryptConfig,
         DefaultSeedRPCServerAddr
     };
@@ -42,12 +35,12 @@ namespace Wallet{
                     cfg->ScryptConfig.Salt, cfg->ScryptConfig.N, cfg->ScryptConfig.R, cfg->ScryptConfig.P);
         }
 
-        return make_shared<Wallet_t>(cfg, acc, wd);
+        return make_shared<Wallet_t>(acc, cfg, wd);
     }
 
     shared_ptr<Wallet_t> WalletFromJSON(string jsonStr, shared_ptr<WalletCfg_t> cfg) {
         auto Mergedcfg = WalletCfg::MergeWalletConfig(cfg);
-        auto wd = shared_ptr<WalletData>(new WalletData());
+        auto wd = make_shared<WalletData>();
         NKN::JSON::Decoder dec(jsonStr);
 
         dec & *wd;
@@ -62,7 +55,7 @@ namespace Wallet{
             fprintf(stderr, "Wrong Password\n");
             return NULL;
         }
-        return make_shared<Wallet_t>(Mergedcfg, acc, wd);
+        return make_shared<Wallet_t>(acc, Mergedcfg, wd);
     }
 };  // namespace Wallet
 };  // namespace NKN

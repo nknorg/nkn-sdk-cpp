@@ -24,12 +24,12 @@ namespace Wallet {
         int R;
         int P;
 
-        ScryptCfg();
-        ScryptCfg(const ScryptCfg_t& s);
-        ScryptCfg(const Uint64& salt, int N=32768, int R=8, int P=1);
-        ~ScryptCfg();
+        ScryptCfg() = default;
+        ScryptCfg(const ScryptCfg_t& s) = default;
+        ScryptCfg(const Uint64& salt, int N=32768, int R=8, int P=1): Salt(salt), N(N), R(R), P(P) {}
+        ~ScryptCfg() = default;
 
-        const ScryptCfg_t& operator=(const ScryptCfg_t& cfg);
+        ScryptCfg_t& operator=(const ScryptCfg_t& cfg) = default;
 
         bool isValidCfg();  // TODO Check N/R/P
 
@@ -109,7 +109,7 @@ namespace Wallet {
                 const AES_IV_t&  iv     = *Uint128::Random<shared_ptr<Uint128>>(),
                 const Salt_t&    salt   = *Uint64::Random<shared_ptr<Uint64>>(),
                 int N=32768, int R=8, int P=1) {
-            return shared_ptr<WalletData_t>(new WalletData(acc, pswd, mstKey, iv, salt, N, R, P));
+            return make_shared<WalletData_t>(acc, pswd, mstKey, iv, salt, N, R, P);
         }
 
         inline bool isSupportedVer() {

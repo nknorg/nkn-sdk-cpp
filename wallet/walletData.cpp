@@ -8,23 +8,6 @@ using namespace std;
  * Scrypt Config *
  *****************/
 
-namespace NKN {
-namespace Wallet {
-    ScryptCfg::ScryptCfg() : Salt(), N(), R(), P() {}
-    ScryptCfg::ScryptCfg(const ScryptCfg_t& s) : Salt(s.Salt), N(s.N), R(s.R), P(s.P) {}
-    ScryptCfg::ScryptCfg(const Uint64& salt, int N, int R, int P) : Salt(salt), N(N), R(R), P(P) {}
-    ScryptCfg::~ScryptCfg() {}
-
-    const ScryptCfg_t& ScryptCfg::operator=(const ScryptCfg_t& cfg) {
-        Salt = cfg.Salt;
-        N = cfg.N;
-        R = cfg.R;
-        P = cfg.P;
-        return *this;
-    }
-};  // namespace Wallet
-};  // namespace NKN
-
 /* Implement insertion/extration template specialized for Object
  * Otherwise it will match default insertion & extration from json/NKNCodec.h
  */
