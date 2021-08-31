@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "include/uBigInt.h"
+#include "include/byteslice.h"
 
 using namespace std;
 

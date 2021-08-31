@@ -10,6 +10,8 @@ using namespace std;
 
 namespace NKN {
 namespace Wallet {
+    typedef ED25519::PubKey_t   PubKey_t;
+    typedef ED25519::PrivKey_t  PrivKey_t;
     typedef struct ProgramContext ProgramContext_t;
     struct ProgramContext {
         typedef ED25519::ProgramHash_t::ParameterType ParameterType;
@@ -35,6 +37,8 @@ namespace Wallet {
 
     typedef struct Account Account_t;
     struct Account {
+        typedef ED25519::PubKey_t   PubKey_t;
+        typedef ED25519::PrivKey_t  PrivKey_t;
         // const Account member since PubKey & ProgramHash should be determined by PrivKey.
         // They should not be modified anymore after constructed.
         const ED25519::PrivKey_t     PrivateKey;
@@ -82,10 +86,15 @@ namespace Wallet {
         }
 
         inline const Uint256 GetCurvePrivKey() const {
-            const string signPriv = GetPrivateKeyFromSeed().toBytes();
+            return PrivateKey.toCurvePrivKey<Uint256>();
+            /* const string signPriv = GetPrivateKeyFromSeed().toBytes();
             vector<uint8_t> curvePriv(crypto_scalarmult_curve25519_BYTES, 0);
             crypto_sign_ed25519_sk_to_curve25519(curvePriv.data(), (uint8_t*)signPriv.data());
-            return Uint256(curvePriv);
+            return Uint256(curvePriv); */
+        }
+
+        inline const Uint256 GetCurvePubKey() const {
+            return PublicKey.toCurvePubKey<Uint256>();
         }
     };
 };  // namespace Wallet

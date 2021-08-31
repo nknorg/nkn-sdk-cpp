@@ -56,7 +56,7 @@ struct Random<AnyInt, typename enable_if<is_integral<AnyInt>::value, AnyInt>::ty
 template <typename Elem, size_t N>
 struct Random<array<Elem,N>, typename enable_if<is_integral<Elem>::value, array<Elem,N>>::type> {
     array<Elem,N> operator()(size_t cnt=N) {
-        DEBUG_RANDOM(AnyInt)
+        // DEBUG_RANDOM(array<Elem,N>)
         assert(cnt<=N);
 
         array<Elem,N> buf{};    // preAlloc and fill 0
@@ -103,7 +103,7 @@ struct Random< _Tp<Args...>,
                         && is_integral<typename C::value_type>::value,
                         C
                     >::type _impl(size_t cnt) {
-        DEBUG_RANDOM(AnyType)
+        DEBUG_RANDOM(C)
 
         _Elem e;
         AnyContainer buf;
@@ -120,7 +120,7 @@ struct Random< _Tp<Args...>,
                         && is_integral<typename C::value_type>::value,
                         C
                     >::type _impl(size_t cnt) {
-        DEBUG_RANDOM(AnyType)
+        DEBUG_RANDOM(C)
 
         auto size = cnt * sizeof(_Elem);
         AnyContainer buf(size, _Elem());    // preAlloc and initialized
@@ -149,7 +149,7 @@ struct Random< uBigInt<N>,
                >::type>
 {
     uBigInt<N> operator()(size_t cnt=N/8) {
-        DEBUG_RANDOM(AnyInt)
+        DEBUG_RANDOM(uBigInt<N>)
         assert(cnt<=N/8);
 
         vector<uint8_t> buf(N/8, 0);    // initialize zero cover cnt<N/8 case
@@ -167,7 +167,7 @@ struct Random< shared_ptr<uBigInt<N>>,
                >::type>
 {
     shared_ptr<uBigInt<N>> operator()(size_t cnt=N/8) {
-        DEBUG_RANDOM(AnyInt)
+        DEBUG_RANDOM(shared_ptr<uBigInt<N>>)
         assert(cnt<=N/8);
 
         vector<uint8_t> buf(N/8, 0);    // initialize zero cover cnt<N/8 case

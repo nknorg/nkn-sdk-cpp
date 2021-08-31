@@ -4,6 +4,7 @@
 #include <sodium.h>
 
 #include "include/uBigInt.h"
+#include "include/byteslice.h"
 #include "include/crypto/hash.h"
 #include "include/crypto/base58.h"
 
@@ -15,14 +16,16 @@ namespace ED25519 {
     // base58.BitcoinEncoding[21] = 'N', base58.BitcoinEncoding[18] = 'K'
     // 33 = len(base58.Encode( (2**192).Bytes() )),  192 = 8bit * (UINT160SIZE + SHA256CHKSUM)
     // (('N' * 58**35) + ('K' * 58**34) + ('N' * 58**33)) >> 192 = 0x02b824
-    constexpr char    FOOLPROOFPREFIX[] = {0x02, (char)0xb8, 0x25};
+    constexpr const char    FOOLPROOFPREFIX[] = {0x02, (char)0xb8, 0x25};
 
     constexpr size_t ProgramHash_SIZE = 160/8;
     constexpr size_t ADDR_STR_LEN     = 36; // len of (2**192).Bytes() = 33, +3 'NKN' prefix
 
     constexpr size_t PREFIXLEN        = sizeof(FOOLPROOFPREFIX);
-    constexpr size_t SHA256CHKSUM     = 4;
+    constexpr size_t SHA256CHKSUM     = 32/8; // 32bit checksum
     constexpr size_t HEXADDRLEN       = PREFIXLEN + ProgramHash_SIZE + SHA256CHKSUM;
+
+    constexpr size_t SignatureSize    = crypto_sign_ed25519_BYTES;
 
     typedef struct ProgramHash : public Uint160 {
         typedef enum ProgramContextParameterType : uint8_t {
@@ -84,6 +87,9 @@ namespace ED25519 {
     } ProgramHash_t;
 
     typedef struct PubKey : public Uint256 {
+        static constexpr size_t HexStrLen = 2*256/8;
+        static constexpr size_t Size = 256/8;
+
         PubKey() : Uint256() {}
         PubKey(const PubKey& pk) : Uint256(pk) {}
         template<typename _T>
@@ -127,9 +133,29 @@ namespace ED25519 {
             ret.push_back((_CharT)ProgramHash_t::ParameterType::CHECKSIG);
             return ret;
         }
+
+        template<typename T> const T toCurvePubKey() const;
+        template<> const shared_ptr<vector<uint8_t>> toCurvePubKey<shared_ptr<vector<uint8_t>>>() const {
+            const string signPk = toBytes();
+            auto curvePub = make_shared<vector<uint8_t>>(crypto_scalarmult_curve25519_BYTES, 0);
+            int err = crypto_sign_ed25519_pk_to_curve25519(curvePub->data(), (const uint8_t*)signPk.data());
+            if (err) {
+                cerr << "crypto_sign_ed25519_pk_to_curve25519 met err: " << err << endl;
+            }
+            return err ? nullptr : curvePub;
+        }
+        template<> inline const Uint256 toCurvePubKey<Uint256>() const {
+            return Uint256(*toCurvePubKey<shared_ptr<vector<uint8_t>>>());
+        }
+        template<> inline const shared_ptr<Uint256> toCurvePubKey<shared_ptr<Uint256>>() const {
+            return make_shared<Uint256>(*toCurvePubKey<shared_ptr<vector<uint8_t>>>());
+        }
     } PubKey_t;
 
     typedef struct PrivKey : public Uint256 {
+        static constexpr size_t HexStrLen = 2*256/8;
+        static constexpr size_t Size = 256/8;
+
         PrivKey() : PrivKey(*Uint256::Random<shared_ptr<Uint256>>()) {} // generated PrivKey from random
         PrivKey(const PrivKey& k) : Uint256(k) {}
         template<typename _T>
@@ -140,9 +166,9 @@ namespace ED25519 {
         const PubKey_t PublicKey() const {
             basic_string<uint8_t> pk(crypto_sign_PUBLICKEYBYTES, 0);
             basic_string<uint8_t> sk(crypto_sign_SECRETKEYBYTES, 0);
+            auto seed = toBytes();
 
-            int not_ok = crypto_sign_seed_keypair(const_cast<uint8_t*>(pk.c_str()), const_cast<uint8_t*>(sk.c_str()),
-                    reinterpret_cast<const uint8_t*>(toBytes().c_str()));
+            int not_ok = crypto_sign_seed_keypair((uint8_t*)pk.data(), (uint8_t*)sk.data(), (const uint8_t*)seed.data());
             if (not_ok) {
                 printf("crypto_sign_seed_keypair failed %d\n", not_ok);
                 // TODO throw
@@ -168,6 +194,27 @@ namespace ED25519 {
             string signature(crypto_sign_BYTES, 0);
             crypto_sign_detached((uint8_t*)signature.data(), NULL, msg, n, (uint8_t*)sk.data());
             return signature;
+        }
+
+        template<typename T> const T toCurvePrivKey() const;
+        template<> const shared_ptr<vector<uint8_t>> toCurvePrivKey<shared_ptr<vector<uint8_t>>>() const {
+            const string seed = toBytes();
+            vector<uint8_t> signPk(crypto_sign_PUBLICKEYBYTES, 0);
+            vector<uint8_t> signSk(crypto_sign_SECRETKEYBYTES, 0);
+            auto curvePriv = make_shared<vector<uint8_t>>(crypto_scalarmult_curve25519_BYTES, 0);
+
+            int err = crypto_sign_seed_keypair(signPk.data(), signSk.data(), (uint8_t*)seed.data());
+            err = crypto_sign_ed25519_sk_to_curve25519(curvePriv->data(), signSk.data());
+            if (err) {
+                cerr << "toCurvePrivKey met err: " << err << endl;
+            }
+            return err ? nullptr : curvePriv;
+        }
+        template<> inline const Uint256 toCurvePrivKey<Uint256>() const {
+            return Uint256(*toCurvePrivKey<shared_ptr<vector<uint8_t>>>());
+        }
+        template<> inline const shared_ptr<Uint256> toCurvePrivKey<shared_ptr<Uint256>>() const {
+            return make_shared<Uint256>(*toCurvePrivKey<shared_ptr<vector<uint8_t>>>());
         }
     } PrivKey_t;
 }; // namespace ED25519
