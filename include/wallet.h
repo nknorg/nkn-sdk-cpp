@@ -35,8 +35,8 @@ namespace Wallet {
         WalletCfg(const WalletCfg_t& ) = default;
         WalletCfg& operator=(const WalletCfg_t&) = default;
 
-        inline WalletCfg(AES_IV_t iv, AES_Key_t mstKey, string pswd, int32_t timeout=10*1000, int32_t concurrency=1,
-                const ScryptCfg_t& cfg=DefaultScryptConfig, const vector<string>& rpcSrvs=DefaultSeedRPCServerAddr)
+        inline WalletCfg(AES_IV_t iv, AES_Key_t mstKey, string pswd, int32_t timeout, int32_t concurrency,
+                const ScryptCfg_t& cfg, const vector<string>& rpcSrvs)
             : IV(iv), MasterKey(mstKey), Password(pswd), RPCTimeout(timeout), RPCConcurrency(concurrency),
             ScryptConfig(cfg), SeedRPCServerAddr(rpcSrvs) {}
 
