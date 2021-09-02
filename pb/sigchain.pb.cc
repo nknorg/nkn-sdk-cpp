@@ -14,44 +14,48 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
-extern PROTOBUF_INTERNAL_EXPORT_pb_2fsigchain_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SigChainElem_pb_2fsigchain_2eproto;
+
+PROTOBUF_PRAGMA_INIT_SEG
 namespace pb {
-class SigChainElemDefaultTypeInternal {
- public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SigChainElem> _instance;
-} _SigChainElem_default_instance_;
-class SigChainDefaultTypeInternal {
- public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SigChain> _instance;
-} _SigChain_default_instance_;
+constexpr SigChainElem::SigChainElem(
+  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
+  : id_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , next_pubkey_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , signature_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , vrf_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , proof_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , mining_(false)
+  , sig_algo_(0)
+{}
+struct SigChainElemDefaultTypeInternal {
+  constexpr SigChainElemDefaultTypeInternal()
+    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  ~SigChainElemDefaultTypeInternal() {}
+  union {
+    SigChainElem _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT SigChainElemDefaultTypeInternal _SigChainElem_default_instance_;
+constexpr SigChain::SigChain(
+  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
+  : elems_()
+  , block_hash_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , src_id_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , src_pubkey_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , dest_id_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , dest_pubkey_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , nonce_(0u)
+  , data_size_(0u){}
+struct SigChainDefaultTypeInternal {
+  constexpr SigChainDefaultTypeInternal()
+    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  ~SigChainDefaultTypeInternal() {}
+  union {
+    SigChain _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT SigChainDefaultTypeInternal _SigChain_default_instance_;
 }  // namespace pb
-static void InitDefaultsscc_info_SigChain_pb_2fsigchain_2eproto() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  {
-    void* ptr = &::pb::_SigChain_default_instance_;
-    new (ptr) ::pb::SigChain();
-    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
-  }
-}
-
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SigChain_pb_2fsigchain_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_SigChain_pb_2fsigchain_2eproto}, {
-      &scc_info_SigChainElem_pb_2fsigchain_2eproto.base,}};
-
-static void InitDefaultsscc_info_SigChainElem_pb_2fsigchain_2eproto() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  {
-    void* ptr = &::pb::_SigChainElem_default_instance_;
-    new (ptr) ::pb::SigChainElem();
-    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
-  }
-}
-
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SigChainElem_pb_2fsigchain_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_SigChainElem_pb_2fsigchain_2eproto}, {}};
-
 static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_pb_2fsigchain_2eproto[2];
 static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_pb_2fsigchain_2eproto[1];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_pb_2fsigchain_2eproto = nullptr;
@@ -105,22 +109,19 @@ const char descriptor_table_protodef_pb_2fsigchain_2eproto[] PROTOBUF_SECTION_VA
   "\003(\0132\020.pb.SigChainElem*\"\n\007SigAlgo\022\r\n\tSIGN"
   "ATURE\020\000\022\010\n\004HASH\020\001B\006Z\004./pbb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_pb_2fsigchain_2eproto_deps[1] = {
-};
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pb_2fsigchain_2eproto_sccs[2] = {
-  &scc_info_SigChain_pb_2fsigchain_2eproto.base,
-  &scc_info_SigChainElem_pb_2fsigchain_2eproto.base,
-};
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_pb_2fsigchain_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_pb_2fsigchain_2eproto = {
-  false, false, descriptor_table_protodef_pb_2fsigchain_2eproto, "pb/sigchain.proto", 393,
-  &descriptor_table_pb_2fsigchain_2eproto_once, descriptor_table_pb_2fsigchain_2eproto_sccs, descriptor_table_pb_2fsigchain_2eproto_deps, 2, 0,
+  false, false, 393, descriptor_table_protodef_pb_2fsigchain_2eproto, "pb/sigchain.proto", 
+  &descriptor_table_pb_2fsigchain_2eproto_once, nullptr, 0, 2,
   schemas, file_default_instances, TableStruct_pb_2fsigchain_2eproto::offsets,
-  file_level_metadata_pb_2fsigchain_2eproto, 2, file_level_enum_descriptors_pb_2fsigchain_2eproto, file_level_service_descriptors_pb_2fsigchain_2eproto,
+  file_level_metadata_pb_2fsigchain_2eproto, file_level_enum_descriptors_pb_2fsigchain_2eproto, file_level_service_descriptors_pb_2fsigchain_2eproto,
 };
+PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_pb_2fsigchain_2eproto_getter() {
+  return &descriptor_table_pb_2fsigchain_2eproto;
+}
 
 // Force running AddDescriptors() at dynamic initialization time.
-static bool dynamic_init_dummy_pb_2fsigchain_2eproto = (static_cast<void>(::PROTOBUF_NAMESPACE_ID::internal::AddDescriptors(&descriptor_table_pb_2fsigchain_2eproto)), true);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_pb_2fsigchain_2eproto(&descriptor_table_pb_2fsigchain_2eproto);
 namespace pb {
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* SigAlgo_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_pb_2fsigchain_2eproto);
@@ -143,10 +144,13 @@ class SigChainElem::_Internal {
  public:
 };
 
-SigChainElem::SigChainElem(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+SigChainElem::SigChainElem(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:pb.SigChainElem)
 }
 SigChainElem::SigChainElem(const SigChainElem& from)
@@ -155,27 +159,27 @@ SigChainElem::SigChainElem(const SigChainElem& from)
   id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_id().empty()) {
     id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_id(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   next_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_next_pubkey().empty()) {
     next_pubkey_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_next_pubkey(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   signature_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_signature().empty()) {
     signature_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_signature(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   vrf_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_vrf().empty()) {
     vrf_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_vrf(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   proof_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_proof().empty()) {
     proof_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_proof(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   ::memcpy(&mining_, &from.mining_,
     static_cast<size_t>(reinterpret_cast<char*>(&sig_algo_) -
@@ -183,27 +187,27 @@ SigChainElem::SigChainElem(const SigChainElem& from)
   // @@protoc_insertion_point(copy_constructor:pb.SigChainElem)
 }
 
-void SigChainElem::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SigChainElem_pb_2fsigchain_2eproto.base);
-  id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  next_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  signature_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  vrf_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  proof_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&mining_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&sig_algo_) -
-      reinterpret_cast<char*>(&mining_)) + sizeof(sig_algo_));
+inline void SigChainElem::SharedCtor() {
+id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+next_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+signature_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+vrf_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+proof_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&mining_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&sig_algo_) -
+    reinterpret_cast<char*>(&mining_)) + sizeof(sig_algo_));
 }
 
 SigChainElem::~SigChainElem() {
   // @@protoc_insertion_point(destructor:pb.SigChainElem)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void SigChainElem::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void SigChainElem::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   next_pubkey_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   signature_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -220,11 +224,6 @@ void SigChainElem::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
 void SigChainElem::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const SigChainElem& SigChainElem::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_SigChainElem_pb_2fsigchain_2eproto.base);
-  return *internal_default_instance();
-}
-
 
 void SigChainElem::Clear() {
 // @@protoc_insertion_point(message_clear_start:pb.SigChainElem)
@@ -248,7 +247,6 @@ const char* SigChainElem::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // bytes id = 1;
       case 1:
@@ -307,7 +305,8 @@ const char* SigChainElem::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_I
         continue;
       default: {
       handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
+        if ((tag == 0) || ((tag & 7) == 4)) {
+          CHK_(ptr);
           ctx->SetLastTag(tag);
           goto success;
         }
@@ -334,44 +333,44 @@ failure:
   (void) cached_has_bits;
 
   // bytes id = 1;
-  if (this->id().size() > 0) {
+  if (!this->_internal_id().empty()) {
     target = stream->WriteBytesMaybeAliased(
         1, this->_internal_id(), target);
   }
 
   // bytes next_pubkey = 2;
-  if (this->next_pubkey().size() > 0) {
+  if (!this->_internal_next_pubkey().empty()) {
     target = stream->WriteBytesMaybeAliased(
         2, this->_internal_next_pubkey(), target);
   }
 
   // bool mining = 3;
-  if (this->mining() != 0) {
+  if (this->_internal_mining() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(3, this->_internal_mining(), target);
   }
 
   // bytes signature = 4;
-  if (this->signature().size() > 0) {
+  if (!this->_internal_signature().empty()) {
     target = stream->WriteBytesMaybeAliased(
         4, this->_internal_signature(), target);
   }
 
   // .pb.SigAlgo sig_algo = 5;
-  if (this->sig_algo() != 0) {
+  if (this->_internal_sig_algo() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
       5, this->_internal_sig_algo(), target);
   }
 
   // bytes vrf = 6;
-  if (this->vrf().size() > 0) {
+  if (!this->_internal_vrf().empty()) {
     target = stream->WriteBytesMaybeAliased(
         6, this->_internal_vrf(), target);
   }
 
   // bytes proof = 7;
-  if (this->proof().size() > 0) {
+  if (!this->_internal_proof().empty()) {
     target = stream->WriteBytesMaybeAliased(
         7, this->_internal_proof(), target);
   }
@@ -393,47 +392,47 @@ size_t SigChainElem::ByteSizeLong() const {
   (void) cached_has_bits;
 
   // bytes id = 1;
-  if (this->id().size() > 0) {
+  if (!this->_internal_id().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_id());
   }
 
   // bytes next_pubkey = 2;
-  if (this->next_pubkey().size() > 0) {
+  if (!this->_internal_next_pubkey().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_next_pubkey());
   }
 
   // bytes signature = 4;
-  if (this->signature().size() > 0) {
+  if (!this->_internal_signature().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_signature());
   }
 
   // bytes vrf = 6;
-  if (this->vrf().size() > 0) {
+  if (!this->_internal_vrf().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_vrf());
   }
 
   // bytes proof = 7;
-  if (this->proof().size() > 0) {
+  if (!this->_internal_proof().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_proof());
   }
 
   // bool mining = 3;
-  if (this->mining() != 0) {
+  if (this->_internal_mining() != 0) {
     total_size += 1 + 1;
   }
 
   // .pb.SigAlgo sig_algo = 5;
-  if (this->sig_algo() != 0) {
+  if (this->_internal_sig_algo() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_sig_algo());
   }
@@ -447,56 +446,47 @@ size_t SigChainElem::ByteSizeLong() const {
   return total_size;
 }
 
-void SigChainElem::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:pb.SigChainElem)
-  GOOGLE_DCHECK_NE(&from, this);
-  const SigChainElem* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SigChainElem>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:pb.SigChainElem)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:pb.SigChainElem)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SigChainElem::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    SigChainElem::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SigChainElem::GetClassData() const { return &_class_data_; }
+
+void SigChainElem::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message*to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message&from) {
+  static_cast<SigChainElem *>(to)->MergeFrom(
+      static_cast<const SigChainElem &>(from));
 }
+
 
 void SigChainElem::MergeFrom(const SigChainElem& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:pb.SigChainElem)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.id().size() > 0) {
+  if (!from._internal_id().empty()) {
     _internal_set_id(from._internal_id());
   }
-  if (from.next_pubkey().size() > 0) {
+  if (!from._internal_next_pubkey().empty()) {
     _internal_set_next_pubkey(from._internal_next_pubkey());
   }
-  if (from.signature().size() > 0) {
+  if (!from._internal_signature().empty()) {
     _internal_set_signature(from._internal_signature());
   }
-  if (from.vrf().size() > 0) {
+  if (!from._internal_vrf().empty()) {
     _internal_set_vrf(from._internal_vrf());
   }
-  if (from.proof().size() > 0) {
+  if (!from._internal_proof().empty()) {
     _internal_set_proof(from._internal_proof());
   }
-  if (from.mining() != 0) {
+  if (from._internal_mining() != 0) {
     _internal_set_mining(from._internal_mining());
   }
-  if (from.sig_algo() != 0) {
+  if (from._internal_sig_algo() != 0) {
     _internal_set_sig_algo(from._internal_sig_algo());
   }
-}
-
-void SigChainElem::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:pb.SigChainElem)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void SigChainElem::CopyFrom(const SigChainElem& from) {
@@ -512,12 +502,32 @@ bool SigChainElem::IsInitialized() const {
 
 void SigChainElem::InternalSwap(SigChainElem* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  id_.Swap(&other->id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  next_pubkey_.Swap(&other->next_pubkey_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  signature_.Swap(&other->signature_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  vrf_.Swap(&other->vrf_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  proof_.Swap(&other->proof_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &id_, GetArenaForAllocation(),
+      &other->id_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &next_pubkey_, GetArenaForAllocation(),
+      &other->next_pubkey_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &signature_, GetArenaForAllocation(),
+      &other->signature_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &vrf_, GetArenaForAllocation(),
+      &other->vrf_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &proof_, GetArenaForAllocation(),
+      &other->proof_, other->GetArenaForAllocation()
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(SigChainElem, sig_algo_)
       + sizeof(SigChainElem::sig_algo_)
@@ -527,9 +537,10 @@ void SigChainElem::InternalSwap(SigChainElem* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SigChainElem::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_pb_2fsigchain_2eproto_getter, &descriptor_table_pb_2fsigchain_2eproto_once,
+      file_level_metadata_pb_2fsigchain_2eproto[0]);
 }
-
 
 // ===================================================================
 
@@ -537,11 +548,14 @@ class SigChain::_Internal {
  public:
 };
 
-SigChain::SigChain(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+SigChain::SigChain(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
   elems_(arena) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:pb.SigChain)
 }
 SigChain::SigChain(const SigChain& from)
@@ -551,27 +565,27 @@ SigChain::SigChain(const SigChain& from)
   block_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_block_hash().empty()) {
     block_hash_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_block_hash(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   src_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_src_id().empty()) {
     src_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_src_id(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   src_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_src_pubkey().empty()) {
     src_pubkey_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_src_pubkey(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   dest_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_dest_id().empty()) {
     dest_id_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_dest_id(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   dest_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_dest_pubkey().empty()) {
     dest_pubkey_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_dest_pubkey(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   ::memcpy(&nonce_, &from.nonce_,
     static_cast<size_t>(reinterpret_cast<char*>(&data_size_) -
@@ -579,27 +593,27 @@ SigChain::SigChain(const SigChain& from)
   // @@protoc_insertion_point(copy_constructor:pb.SigChain)
 }
 
-void SigChain::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SigChain_pb_2fsigchain_2eproto.base);
-  block_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  src_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  src_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  dest_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  dest_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&nonce_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&data_size_) -
-      reinterpret_cast<char*>(&nonce_)) + sizeof(data_size_));
+inline void SigChain::SharedCtor() {
+block_hash_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+src_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+src_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+dest_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+dest_pubkey_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&nonce_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&data_size_) -
+    reinterpret_cast<char*>(&nonce_)) + sizeof(data_size_));
 }
 
 SigChain::~SigChain() {
   // @@protoc_insertion_point(destructor:pb.SigChain)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void SigChain::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void SigChain::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   block_hash_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   src_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   src_pubkey_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -616,11 +630,6 @@ void SigChain::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
 void SigChain::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const SigChain& SigChain::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_SigChain_pb_2fsigchain_2eproto.base);
-  return *internal_default_instance();
-}
-
 
 void SigChain::Clear() {
 // @@protoc_insertion_point(message_clear_start:pb.SigChain)
@@ -645,7 +654,6 @@ const char* SigChain::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // uint32 nonce = 1;
       case 1:
@@ -715,7 +723,8 @@ const char* SigChain::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
         continue;
       default: {
       handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
+        if ((tag == 0) || ((tag & 7) == 4)) {
+          CHK_(ptr);
           ctx->SetLastTag(tag);
           goto success;
         }
@@ -742,43 +751,43 @@ failure:
   (void) cached_has_bits;
 
   // uint32 nonce = 1;
-  if (this->nonce() != 0) {
+  if (this->_internal_nonce() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_nonce(), target);
   }
 
   // uint32 data_size = 2;
-  if (this->data_size() != 0) {
+  if (this->_internal_data_size() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(2, this->_internal_data_size(), target);
   }
 
   // bytes block_hash = 3;
-  if (this->block_hash().size() > 0) {
+  if (!this->_internal_block_hash().empty()) {
     target = stream->WriteBytesMaybeAliased(
         3, this->_internal_block_hash(), target);
   }
 
   // bytes src_id = 4;
-  if (this->src_id().size() > 0) {
+  if (!this->_internal_src_id().empty()) {
     target = stream->WriteBytesMaybeAliased(
         4, this->_internal_src_id(), target);
   }
 
   // bytes src_pubkey = 5;
-  if (this->src_pubkey().size() > 0) {
+  if (!this->_internal_src_pubkey().empty()) {
     target = stream->WriteBytesMaybeAliased(
         5, this->_internal_src_pubkey(), target);
   }
 
   // bytes dest_id = 6;
-  if (this->dest_id().size() > 0) {
+  if (!this->_internal_dest_id().empty()) {
     target = stream->WriteBytesMaybeAliased(
         6, this->_internal_dest_id(), target);
   }
 
   // bytes dest_pubkey = 7;
-  if (this->dest_pubkey().size() > 0) {
+  if (!this->_internal_dest_pubkey().empty()) {
     target = stream->WriteBytesMaybeAliased(
         7, this->_internal_dest_pubkey(), target);
   }
@@ -815,49 +824,49 @@ size_t SigChain::ByteSizeLong() const {
   }
 
   // bytes block_hash = 3;
-  if (this->block_hash().size() > 0) {
+  if (!this->_internal_block_hash().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_block_hash());
   }
 
   // bytes src_id = 4;
-  if (this->src_id().size() > 0) {
+  if (!this->_internal_src_id().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_src_id());
   }
 
   // bytes src_pubkey = 5;
-  if (this->src_pubkey().size() > 0) {
+  if (!this->_internal_src_pubkey().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_src_pubkey());
   }
 
   // bytes dest_id = 6;
-  if (this->dest_id().size() > 0) {
+  if (!this->_internal_dest_id().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_dest_id());
   }
 
   // bytes dest_pubkey = 7;
-  if (this->dest_pubkey().size() > 0) {
+  if (!this->_internal_dest_pubkey().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_dest_pubkey());
   }
 
   // uint32 nonce = 1;
-  if (this->nonce() != 0) {
+  if (this->_internal_nonce() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_nonce());
   }
 
   // uint32 data_size = 2;
-  if (this->data_size() != 0) {
+  if (this->_internal_data_size() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_data_size());
@@ -872,57 +881,48 @@ size_t SigChain::ByteSizeLong() const {
   return total_size;
 }
 
-void SigChain::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:pb.SigChain)
-  GOOGLE_DCHECK_NE(&from, this);
-  const SigChain* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SigChain>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:pb.SigChain)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:pb.SigChain)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData SigChain::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    SigChain::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*SigChain::GetClassData() const { return &_class_data_; }
+
+void SigChain::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message*to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message&from) {
+  static_cast<SigChain *>(to)->MergeFrom(
+      static_cast<const SigChain &>(from));
 }
+
 
 void SigChain::MergeFrom(const SigChain& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:pb.SigChain)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
   elems_.MergeFrom(from.elems_);
-  if (from.block_hash().size() > 0) {
+  if (!from._internal_block_hash().empty()) {
     _internal_set_block_hash(from._internal_block_hash());
   }
-  if (from.src_id().size() > 0) {
+  if (!from._internal_src_id().empty()) {
     _internal_set_src_id(from._internal_src_id());
   }
-  if (from.src_pubkey().size() > 0) {
+  if (!from._internal_src_pubkey().empty()) {
     _internal_set_src_pubkey(from._internal_src_pubkey());
   }
-  if (from.dest_id().size() > 0) {
+  if (!from._internal_dest_id().empty()) {
     _internal_set_dest_id(from._internal_dest_id());
   }
-  if (from.dest_pubkey().size() > 0) {
+  if (!from._internal_dest_pubkey().empty()) {
     _internal_set_dest_pubkey(from._internal_dest_pubkey());
   }
-  if (from.nonce() != 0) {
+  if (from._internal_nonce() != 0) {
     _internal_set_nonce(from._internal_nonce());
   }
-  if (from.data_size() != 0) {
+  if (from._internal_data_size() != 0) {
     _internal_set_data_size(from._internal_data_size());
   }
-}
-
-void SigChain::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:pb.SigChain)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void SigChain::CopyFrom(const SigChain& from) {
@@ -938,13 +938,33 @@ bool SigChain::IsInitialized() const {
 
 void SigChain::InternalSwap(SigChain* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   elems_.InternalSwap(&other->elems_);
-  block_hash_.Swap(&other->block_hash_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  src_id_.Swap(&other->src_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  src_pubkey_.Swap(&other->src_pubkey_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  dest_id_.Swap(&other->dest_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  dest_pubkey_.Swap(&other->dest_pubkey_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &block_hash_, GetArenaForAllocation(),
+      &other->block_hash_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &src_id_, GetArenaForAllocation(),
+      &other->src_id_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &src_pubkey_, GetArenaForAllocation(),
+      &other->src_pubkey_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &dest_id_, GetArenaForAllocation(),
+      &other->dest_id_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &dest_pubkey_, GetArenaForAllocation(),
+      &other->dest_pubkey_, other->GetArenaForAllocation()
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(SigChain, data_size_)
       + sizeof(SigChain::data_size_)
@@ -954,9 +974,10 @@ void SigChain::InternalSwap(SigChain* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SigChain::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_pb_2fsigchain_2eproto_getter, &descriptor_table_pb_2fsigchain_2eproto_once,
+      file_level_metadata_pb_2fsigchain_2eproto[1]);
 }
-
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace pb

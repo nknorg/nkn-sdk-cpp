@@ -14,25 +14,29 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
+
+PROTOBUF_PRAGMA_INIT_SEG
 namespace pb {
-class NodeDataDefaultTypeInternal {
- public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<NodeData> _instance;
-} _NodeData_default_instance_;
+constexpr NodeData::NodeData(
+  ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized)
+  : public_key_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , tls_websocket_domain_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , tls_json_rpc_domain_(&::PROTOBUF_NAMESPACE_ID::internal::fixed_address_empty_string)
+  , websocket_port_(0u)
+  , json_rpc_port_(0u)
+  , protocol_version_(0u)
+  , tls_websocket_port_(0u)
+  , tls_json_rpc_port_(0u){}
+struct NodeDataDefaultTypeInternal {
+  constexpr NodeDataDefaultTypeInternal()
+    : _instance(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized{}) {}
+  ~NodeDataDefaultTypeInternal() {}
+  union {
+    NodeData _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT NodeDataDefaultTypeInternal _NodeData_default_instance_;
 }  // namespace pb
-static void InitDefaultsscc_info_NodeData_pb_2fnode_2eproto() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  {
-    void* ptr = &::pb::_NodeData_default_instance_;
-    new (ptr) ::pb::NodeData();
-    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
-  }
-}
-
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_NodeData_pb_2fnode_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_NodeData_pb_2fnode_2eproto}, {}};
-
 static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_pb_2fnode_2eproto[1];
 static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_pb_2fnode_2eproto[1];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_pb_2fnode_2eproto = nullptr;
@@ -71,21 +75,19 @@ const char descriptor_table_protodef_pb_2fnode_2eproto[] PROTOBUF_SECTION_VARIAB
   "NC_STARTED\020\001\022\021\n\rSYNC_FINISHED\020\002\022\024\n\020PERSI"
   "ST_FINISHED\020\003B\006Z\004./pbb\006proto3"
   ;
-static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_pb_2fnode_2eproto_deps[1] = {
-};
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pb_2fnode_2eproto_sccs[1] = {
-  &scc_info_NodeData_pb_2fnode_2eproto.base,
-};
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_pb_2fnode_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_pb_2fnode_2eproto = {
-  false, false, descriptor_table_protodef_pb_2fnode_2eproto, "pb/node.proto", 349,
-  &descriptor_table_pb_2fnode_2eproto_once, descriptor_table_pb_2fnode_2eproto_sccs, descriptor_table_pb_2fnode_2eproto_deps, 1, 0,
+  false, false, 349, descriptor_table_protodef_pb_2fnode_2eproto, "pb/node.proto", 
+  &descriptor_table_pb_2fnode_2eproto_once, nullptr, 0, 1,
   schemas, file_default_instances, TableStruct_pb_2fnode_2eproto::offsets,
-  file_level_metadata_pb_2fnode_2eproto, 1, file_level_enum_descriptors_pb_2fnode_2eproto, file_level_service_descriptors_pb_2fnode_2eproto,
+  file_level_metadata_pb_2fnode_2eproto, file_level_enum_descriptors_pb_2fnode_2eproto, file_level_service_descriptors_pb_2fnode_2eproto,
 };
+PROTOBUF_ATTRIBUTE_WEAK const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable* descriptor_table_pb_2fnode_2eproto_getter() {
+  return &descriptor_table_pb_2fnode_2eproto;
+}
 
 // Force running AddDescriptors() at dynamic initialization time.
-static bool dynamic_init_dummy_pb_2fnode_2eproto = (static_cast<void>(::PROTOBUF_NAMESPACE_ID::internal::AddDescriptors(&descriptor_table_pb_2fnode_2eproto)), true);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY static ::PROTOBUF_NAMESPACE_ID::internal::AddDescriptorsRunner dynamic_init_dummy_pb_2fnode_2eproto(&descriptor_table_pb_2fnode_2eproto);
 namespace pb {
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* SyncState_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_pb_2fnode_2eproto);
@@ -110,10 +112,13 @@ class NodeData::_Internal {
  public:
 };
 
-NodeData::NodeData(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+NodeData::NodeData(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
   SharedCtor();
-  RegisterArenaDtor(arena);
+  if (!is_message_owned) {
+    RegisterArenaDtor(arena);
+  }
   // @@protoc_insertion_point(arena_constructor:pb.NodeData)
 }
 NodeData::NodeData(const NodeData& from)
@@ -122,17 +127,17 @@ NodeData::NodeData(const NodeData& from)
   public_key_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_public_key().empty()) {
     public_key_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_public_key(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   tls_websocket_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_tls_websocket_domain().empty()) {
     tls_websocket_domain_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_tls_websocket_domain(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   tls_json_rpc_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_tls_json_rpc_domain().empty()) {
     tls_json_rpc_domain_.Set(::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::EmptyDefault{}, from._internal_tls_json_rpc_domain(), 
-      GetArena());
+      GetArenaForAllocation());
   }
   ::memcpy(&websocket_port_, &from.websocket_port_,
     static_cast<size_t>(reinterpret_cast<char*>(&tls_json_rpc_port_) -
@@ -140,25 +145,25 @@ NodeData::NodeData(const NodeData& from)
   // @@protoc_insertion_point(copy_constructor:pb.NodeData)
 }
 
-void NodeData::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_NodeData_pb_2fnode_2eproto.base);
-  public_key_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  tls_websocket_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  tls_json_rpc_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
-      reinterpret_cast<char*>(&websocket_port_) - reinterpret_cast<char*>(this)),
-      0, static_cast<size_t>(reinterpret_cast<char*>(&tls_json_rpc_port_) -
-      reinterpret_cast<char*>(&websocket_port_)) + sizeof(tls_json_rpc_port_));
+inline void NodeData::SharedCtor() {
+public_key_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+tls_websocket_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+tls_json_rpc_domain_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&websocket_port_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&tls_json_rpc_port_) -
+    reinterpret_cast<char*>(&websocket_port_)) + sizeof(tls_json_rpc_port_));
 }
 
 NodeData::~NodeData() {
   // @@protoc_insertion_point(destructor:pb.NodeData)
+  if (GetArenaForAllocation() != nullptr) return;
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void NodeData::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
+inline void NodeData::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   public_key_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   tls_websocket_domain_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   tls_json_rpc_domain_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
@@ -173,11 +178,6 @@ void NodeData::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
 void NodeData::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const NodeData& NodeData::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_NodeData_pb_2fnode_2eproto.base);
-  return *internal_default_instance();
-}
-
 
 void NodeData::Clear() {
 // @@protoc_insertion_point(message_clear_start:pb.NodeData)
@@ -199,7 +199,6 @@ const char* NodeData::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
     switch (tag >> 3) {
       // bytes public_key = 1;
       case 1:
@@ -264,7 +263,8 @@ const char* NodeData::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::i
         continue;
       default: {
       handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
+        if ((tag == 0) || ((tag & 7) == 4)) {
+          CHK_(ptr);
           ctx->SetLastTag(tag);
           goto success;
         }
@@ -291,31 +291,31 @@ failure:
   (void) cached_has_bits;
 
   // bytes public_key = 1;
-  if (this->public_key().size() > 0) {
+  if (!this->_internal_public_key().empty()) {
     target = stream->WriteBytesMaybeAliased(
         1, this->_internal_public_key(), target);
   }
 
   // uint32 websocket_port = 2;
-  if (this->websocket_port() != 0) {
+  if (this->_internal_websocket_port() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(2, this->_internal_websocket_port(), target);
   }
 
   // uint32 json_rpc_port = 3;
-  if (this->json_rpc_port() != 0) {
+  if (this->_internal_json_rpc_port() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(3, this->_internal_json_rpc_port(), target);
   }
 
   // uint32 protocol_version = 4;
-  if (this->protocol_version() != 0) {
+  if (this->_internal_protocol_version() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(4, this->_internal_protocol_version(), target);
   }
 
   // string tls_websocket_domain = 5;
-  if (this->tls_websocket_domain().size() > 0) {
+  if (!this->_internal_tls_websocket_domain().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_tls_websocket_domain().data(), static_cast<int>(this->_internal_tls_websocket_domain().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -325,13 +325,13 @@ failure:
   }
 
   // uint32 tls_websocket_port = 6;
-  if (this->tls_websocket_port() != 0) {
+  if (this->_internal_tls_websocket_port() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(6, this->_internal_tls_websocket_port(), target);
   }
 
   // string tls_json_rpc_domain = 7;
-  if (this->tls_json_rpc_domain().size() > 0) {
+  if (!this->_internal_tls_json_rpc_domain().empty()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_tls_json_rpc_domain().data(), static_cast<int>(this->_internal_tls_json_rpc_domain().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
@@ -341,7 +341,7 @@ failure:
   }
 
   // uint32 tls_json_rpc_port = 8;
-  if (this->tls_json_rpc_port() != 0) {
+  if (this->_internal_tls_json_rpc_port() != 0) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(8, this->_internal_tls_json_rpc_port(), target);
   }
@@ -363,56 +363,56 @@ size_t NodeData::ByteSizeLong() const {
   (void) cached_has_bits;
 
   // bytes public_key = 1;
-  if (this->public_key().size() > 0) {
+  if (!this->_internal_public_key().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
         this->_internal_public_key());
   }
 
   // string tls_websocket_domain = 5;
-  if (this->tls_websocket_domain().size() > 0) {
+  if (!this->_internal_tls_websocket_domain().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_tls_websocket_domain());
   }
 
   // string tls_json_rpc_domain = 7;
-  if (this->tls_json_rpc_domain().size() > 0) {
+  if (!this->_internal_tls_json_rpc_domain().empty()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_tls_json_rpc_domain());
   }
 
   // uint32 websocket_port = 2;
-  if (this->websocket_port() != 0) {
+  if (this->_internal_websocket_port() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_websocket_port());
   }
 
   // uint32 json_rpc_port = 3;
-  if (this->json_rpc_port() != 0) {
+  if (this->_internal_json_rpc_port() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_json_rpc_port());
   }
 
   // uint32 protocol_version = 4;
-  if (this->protocol_version() != 0) {
+  if (this->_internal_protocol_version() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_protocol_version());
   }
 
   // uint32 tls_websocket_port = 6;
-  if (this->tls_websocket_port() != 0) {
+  if (this->_internal_tls_websocket_port() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_tls_websocket_port());
   }
 
   // uint32 tls_json_rpc_port = 8;
-  if (this->tls_json_rpc_port() != 0) {
+  if (this->_internal_tls_json_rpc_port() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
         this->_internal_tls_json_rpc_port());
@@ -427,59 +427,50 @@ size_t NodeData::ByteSizeLong() const {
   return total_size;
 }
 
-void NodeData::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:pb.NodeData)
-  GOOGLE_DCHECK_NE(&from, this);
-  const NodeData* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<NodeData>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:pb.NodeData)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:pb.NodeData)
-    MergeFrom(*source);
-  }
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData NodeData::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    NodeData::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*NodeData::GetClassData() const { return &_class_data_; }
+
+void NodeData::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message*to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message&from) {
+  static_cast<NodeData *>(to)->MergeFrom(
+      static_cast<const NodeData &>(from));
 }
+
 
 void NodeData::MergeFrom(const NodeData& from) {
 // @@protoc_insertion_point(class_specific_merge_from_start:pb.NodeData)
   GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.public_key().size() > 0) {
+  if (!from._internal_public_key().empty()) {
     _internal_set_public_key(from._internal_public_key());
   }
-  if (from.tls_websocket_domain().size() > 0) {
+  if (!from._internal_tls_websocket_domain().empty()) {
     _internal_set_tls_websocket_domain(from._internal_tls_websocket_domain());
   }
-  if (from.tls_json_rpc_domain().size() > 0) {
+  if (!from._internal_tls_json_rpc_domain().empty()) {
     _internal_set_tls_json_rpc_domain(from._internal_tls_json_rpc_domain());
   }
-  if (from.websocket_port() != 0) {
+  if (from._internal_websocket_port() != 0) {
     _internal_set_websocket_port(from._internal_websocket_port());
   }
-  if (from.json_rpc_port() != 0) {
+  if (from._internal_json_rpc_port() != 0) {
     _internal_set_json_rpc_port(from._internal_json_rpc_port());
   }
-  if (from.protocol_version() != 0) {
+  if (from._internal_protocol_version() != 0) {
     _internal_set_protocol_version(from._internal_protocol_version());
   }
-  if (from.tls_websocket_port() != 0) {
+  if (from._internal_tls_websocket_port() != 0) {
     _internal_set_tls_websocket_port(from._internal_tls_websocket_port());
   }
-  if (from.tls_json_rpc_port() != 0) {
+  if (from._internal_tls_json_rpc_port() != 0) {
     _internal_set_tls_json_rpc_port(from._internal_tls_json_rpc_port());
   }
-}
-
-void NodeData::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:pb.NodeData)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void NodeData::CopyFrom(const NodeData& from) {
@@ -495,10 +486,22 @@ bool NodeData::IsInitialized() const {
 
 void NodeData::InternalSwap(NodeData* other) {
   using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  public_key_.Swap(&other->public_key_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  tls_websocket_domain_.Swap(&other->tls_websocket_domain_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  tls_json_rpc_domain_.Swap(&other->tls_json_rpc_domain_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &public_key_, GetArenaForAllocation(),
+      &other->public_key_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &tls_websocket_domain_, GetArenaForAllocation(),
+      &other->tls_websocket_domain_, other->GetArenaForAllocation()
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      &tls_json_rpc_domain_, GetArenaForAllocation(),
+      &other->tls_json_rpc_domain_, other->GetArenaForAllocation()
+  );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
       PROTOBUF_FIELD_OFFSET(NodeData, tls_json_rpc_port_)
       + sizeof(NodeData::tls_json_rpc_port_)
@@ -508,9 +511,10 @@ void NodeData::InternalSwap(NodeData* other) {
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata NodeData::GetMetadata() const {
-  return GetMetadataStatic();
+  return ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(
+      &descriptor_table_pb_2fnode_2eproto_getter, &descriptor_table_pb_2fnode_2eproto_once,
+      file_level_metadata_pb_2fnode_2eproto[0]);
 }
-
 
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace pb
