@@ -3,26 +3,8 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
-#if 0
-// corresponding to golang's byte slice
-class byteSlice: public std::basic_string<uint8_t> {
-    typedef std::basic_string<uint8_t> super;
-
-public:
-    template<typename... Args>
-    byteSlice(Args... args): super(args...) {}
-
-    // constructor from string
-    byteSlice(std::string const& str): super((uint8_t*)str.data(), str.length()) {}
-
-    // TODO toString
-};
-
-// User-defined literals for byteSlice
-inline constexpr const uint8_t* operator"" _us(const char *s, size_t) { return (const uint8_t*) s; }
-inline byteSlice operator"" _bytes(const char *s, size_t len) { return byteSlice(s, s+len); }
-#else
 // corresponding to golang's byte slice
 class byteSlice: public std::basic_string<char> {
     typedef std::basic_string<char> super;
@@ -40,7 +22,6 @@ public:
 // User-defined literals for byteSlice
 // inline constexpr const uint8_t* operator"" _us(const char *s, size_t) { return (const uint8_t*) s; }
 inline byteSlice operator"" _bytes(const char *s, size_t len) { return byteSlice(s, s+len); }
-#endif
 
 // input stream
 inline std::istream& operator>>(std::istream &s, byteSlice& dest) {
@@ -49,7 +30,9 @@ inline std::istream& operator>>(std::istream &s, byteSlice& dest) {
 
     // if istream shorter than dest
     auto len = end - dest.begin();
-    if (len < dest.size())
+    assert( len >= 0 );
+
+    if ((size_t)len < dest.size())
         dest.resize(len);   // truncated dest
 
     return s;
