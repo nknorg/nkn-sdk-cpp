@@ -1,0 +1,22 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+package pb;
+
+enum SyncState {
+  WAIT_FOR_SYNCING = 0;
+  SYNC_STARTED = 1;
+  SYNC_FINISHED = 2;
+  PERSIST_FINISHED = 3;
+}
+
+message NodeData {
+  bytes public_key = 1;
+  uint32 websocket_port = 2;
+  uint32 json_rpc_port = 3;
+  uint32 protocol_version = 4;
+  string tls_websocket_domain = 5;
+  uint32 tls_websocket_port = 6;
+  string tls_json_rpc_domain = 7;
+  uint32 tls_json_rpc_port = 8;
+}
