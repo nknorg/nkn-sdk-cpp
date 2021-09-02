@@ -7,3 +7,6 @@
 [submodule "thirdparty/libsodium"]
 	path = thirdparty/libsodium
 	url = https://github.com/jedisct1/libsodium
+[submodule "thirdparty/object_threadsafe"]
+	path = thirdparty/object_threadsafe
+	url = https://github.com/AlexeyAB/object_threadsafe.git
