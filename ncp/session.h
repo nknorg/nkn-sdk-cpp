@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <unordered_map>
 
-#include <boost/thread/thread.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <safe_ptr.h>
 
@@ -16,9 +16,7 @@
 #include "include/byteslice.h"
 #include "tuna/interface.h"
 #include "ncp/config.h"
-// #include "ncp/connection.h"
-
-#include "pb/packet.pb.h"
+#include "ncp/pb/packet.pb.h"
 
 namespace NKN {
 namespace NCP {
@@ -32,7 +30,6 @@ class Session: public std::enable_shared_from_this<Session>, public TUNA::Conn_t
 public:
     friend class Connection;
 
-    // typedef std::chrono::time_point<std::chrono::steady_clock>  ptime_t;
     typedef boost::system::error_code (*SendWithFunc)(const string& localID, const string& remoteID,
                                                         shared_ptr<string> buf, const time_duration& writeTimeout);
     typedef shared_ptr<Connection_t> ConnectionPtr_t;
@@ -76,7 +73,7 @@ public:
     }
 
     uint32_t getSendSeq() {
-        while (IsClosed()) {
+        while (!IsClosed()) {
             auto resend = resendChan->pop(true);
             if (resend)
                 return *resend;
@@ -118,9 +115,9 @@ public:
     // NKN::Conn_t interface
     virtual inline string LocalAddr()    final { return localAddr; }
     virtual inline string RemoteAddr()   final { return remoteAddr; }
-    virtual size_t Read(byteSlice&);
-    virtual size_t Write(const byteSlice&) final { return 0; } // TODO
-    virtual void Close() final {} // TODO
+    virtual size_t Read(byteSlice&) final;
+    virtual size_t Write(const byteSlice&) final;
+    virtual boost::system::error_code Close() final;
 
     shared_ptr<Config_t> config;
 
