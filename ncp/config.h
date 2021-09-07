@@ -8,6 +8,7 @@
 
 namespace NKN {
 namespace NCP {
+typedef class Session Session_t;
 typedef struct Config Config_t;
 struct Config {
     bool     NonStream;
