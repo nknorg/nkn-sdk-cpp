@@ -1,5 +1,4 @@
 #include <memory>
-#include <chrono>
 #include <thread>
 
 #include <boost/asio.hpp>
@@ -32,8 +31,8 @@ Session::Session(const string& localAddr, const string& remoteAddr,
         , sendWindowStartSeq(MinSequenceID), sendWindowEndSeq(MinSequenceID)
         , recvWindowStartSeq(MinSequenceID), recvWindowUsed(0)
         , bytesWrite(0), bytesRead(0), remoteBytesRead(0)
-        , bytesReadSentTime(microsec_clock::universal_time())
-        , bytesReadUpdateTime(microsec_clock::universal_time())
+        , bytesReadSentTime(chrono::steady_clock::now())
+        , bytesReadUpdateTime(chrono::steady_clock::now())
 {
     sendBuffer = make_shared<byteSlice>(sendMtu.load(), 0);
     sendBuffer->resize(0);
@@ -347,12 +346,12 @@ boost::system::error_code Session::startCheckBytesRead() {
         this_thread::sleep_for(interval);
 
         // TODO Lock
-        ptime sentTime(bytesReadSentTime);
-        ptime updateTime(bytesReadUpdateTime);
+        time_point sentTime(bytesReadSentTime);
+        time_point updateTime(bytesReadUpdateTime);
         uint64_t bRead = bytesRead;
 
         if (bRead==0 || sentTime>updateTime ||
-                microsec_clock::local_time()-updateTime < boost::posix_time::milliseconds(config->SendBytesReadThreshold)) {
+                chrono::steady_clock::now()-updateTime < chrono::milliseconds(config->SendBytesReadThreshold)) {
             continue;
         }
 
@@ -541,7 +540,7 @@ size_t Session::_recvAndUpdateSeq(uint32_t seq, string::iterator& output_pos) {
 
     recvWindowUsed -= read_cnt;
     bytesRead += read_cnt;
-    bytesReadUpdateTime = microsec_clock::universal_time();
+    bytesReadUpdateTime = chrono::steady_clock::now();
 
     output_pos = new_pos;   // update output_pos
     return read_cnt;
@@ -556,7 +555,7 @@ boost::system::error_code Session::Close() {
 
     }
 
-    time_point<steady_clock> deadline = steady_clock::now() + chrono::milliseconds(config->Linger);
+    time_point deadline = chrono::steady_clock::now() + chrono::milliseconds(config->Linger);
     while (true) {
         this_thread::sleep_for(chrono::milliseconds(100));
         if (sendWindowStartSeq == sendWindowEndSeq || steady_clock::now() >= deadline) {

@@ -25,7 +25,7 @@ Connection::Connection(const shared_ptr<Session_t> sess, const string& localCliI
       , timeSentSeq()
       , resentSeq()
       , sendAckQueue()
-      , retransmissionTimeout(boost::posix_time::milliseconds(sess->config->InitialRetransmissionTimeout)) {}
+      , retransmissionTimeout(chrono::milliseconds(sess->config->InitialRetransmissionTimeout)) {}
 
 void Connection::ReceiveAck(uint32_t seq, bool isSentByMe) {
     // TODO Lock
@@ -39,13 +39,13 @@ void Connection::ReceiveAck(uint32_t seq, bool isSentByMe) {
     }
 
     if (isSentByMe) {
-        auto mil_sec = boost::posix_time::milliseconds(1).total_milliseconds();
-        auto rtt = microsec_clock::local_time() - (*timeSentSeq)[seq];
-        auto delta = tanh(double(3*rtt.total_milliseconds() - retransmissionTimeout.total_milliseconds())/mil_sec/1000);
+        auto mil_sec = chrono::milliseconds(1).count();
+        auto rtt = chrono::duration_cast<chrono::milliseconds>(chrono::steady_clock::now() - (*timeSentSeq)[seq]);
+        auto delta = tanh(double(3*rtt.count() - retransmissionTimeout.count())/mil_sec/1000);
 
-        retransmissionTimeout += boost::posix_time::milliseconds(long(100*delta));
-        if (retransmissionTimeout.total_milliseconds() > session->config->MaxRetransmissionTimeout)
-            retransmissionTimeout = boost::posix_time::milliseconds(session->config->MaxRetransmissionTimeout);
+        retransmissionTimeout += chrono::milliseconds(long(100*delta));
+        if (retransmissionTimeout.count() > session->config->MaxRetransmissionTimeout)
+            retransmissionTimeout = chrono::milliseconds(session->config->MaxRetransmissionTimeout);
     }
 
     timeSentSeq->erase(seq);
@@ -96,7 +96,7 @@ boost::system::error_code Connection::tx() {
         // sendWith success
         // TODO Lock
         if (timeSentSeq->count(seq) == 0)
-            (*timeSentSeq)[seq] = microsec_clock::local_time();
+            (*timeSentSeq)[seq] = chrono::steady_clock::now();
         resentSeq->erase(seq);
         // TODO UnLock
         seq = 0;
@@ -171,7 +171,7 @@ boost::system::error_code Connection::checkTimeout() {
         t.expires_from_now(interval, ec);
         t.wait(ec);
 
-        ptime threshold = microsec_clock::local_time() - retransmissionTimeout;
+        time_point threshold = chrono::steady_clock::now() - retransmissionTimeout;
         // TODO Lock
         for (auto it = timeSentSeq->begin(); it != timeSentSeq->end(); it++) {
             if (resentSeq->count(it->first) > 0) {   // resent already

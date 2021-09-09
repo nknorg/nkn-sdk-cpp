@@ -1,6 +1,7 @@
 #ifndef __NCP_SESSION_H__
 #define __NCP_SESSION_H__
 
+#include <chrono>
 #include <memory>
 #include <thread>
 #include <string>
@@ -21,7 +22,6 @@
 namespace NKN {
 namespace NCP {
 using namespace std;
-using namespace boost::posix_time;
 
 /****** Session ******/
 typedef class Connection Connection_t;
@@ -30,8 +30,9 @@ class Session: public std::enable_shared_from_this<Session>, public TUNA::Conn_t
 public:
     friend class Connection;
 
+    typedef chrono::time_point<chrono::steady_clock> time_point;
     typedef boost::system::error_code (*SendWithFunc)(const string& localID, const string& remoteID,
-                                                        shared_ptr<string> buf, const time_duration& writeTimeout);
+                                                        shared_ptr<string> buf, const chrono::milliseconds& writeTimeout);
     typedef shared_ptr<Connection_t> ConnectionPtr_t;
     template<typename K_t, typename V_t>
     using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
@@ -55,7 +56,7 @@ public:
     inline bool IsClosed()      { /* TODO Lock */ return isClosed.load(); }
 
     inline shared_ptr<string> GetDataToSend(uint32_t seq) { return (*sendWindowData)[seq]; }
-    inline void updateBytesReadSentTime() { bytesReadSentTime.store(microsec_clock::universal_time()); }
+    inline void updateBytesReadSentTime() { bytesReadSentTime.store(chrono::steady_clock::now()); }
     inline void SetLinger(uint32_t t)   { config->Linger = t; }
 
     inline uint32_t GetConnWindowSize();
@@ -159,8 +160,8 @@ private:
     atomic<uint64_t> bytesRead;
     atomic<uint64_t> remoteBytesRead;
 
-    atomic<ptime> bytesReadSentTime;
-    atomic<ptime> bytesReadUpdateTime;
+    atomic<time_point> bytesReadSentTime;
+    atomic<time_point> bytesReadUpdateTime;
 };  // class Session
 };  // namespace NCP
 };  // namespace NKN

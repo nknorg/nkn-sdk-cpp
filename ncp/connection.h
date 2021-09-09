@@ -1,6 +1,7 @@
 #ifndef __NCP_CONNECTION_H__
 #define __NCP_CONNECTION_H__
 
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,11 +19,11 @@ using namespace std;
 
 namespace NKN {
 namespace NCP {
-using namespace boost::posix_time;
 
 typedef class Session Session_t;
 typedef class Connection Connection_t;
 class Connection {
+    typedef chrono::time_point<chrono::steady_clock> time_point;
     template<typename K_t, typename V_t>
     using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
 
@@ -39,11 +40,11 @@ class Connection {
     Channel<bool> sendWindowUpdate;
     // TODO RWMutex;
 
-    safe_map<uint32_t, ptime>timeSentSeq;
+    safe_map<uint32_t, time_point>timeSentSeq;
     safe_map<uint32_t, bool> resentSeq;
     safe_heap<uint32_t> sendAckQueue;
 
-    time_duration retransmissionTimeout;
+    chrono::milliseconds retransmissionTimeout;
 
 public:
     Connection() = default;
@@ -60,7 +61,7 @@ public:
     inline void SendAck(uint32_t sequenceID) { /* TODO Lock */ sendAckQueue->push(sequenceID); }
     inline int SendAckQueueLen() { /* TODO Lock */ return int(sendAckQueue->size()); }
     void ReceiveAck(uint32_t seq, bool isSentByMe);
-    inline time_duration& RetransmissionTimeout() { /* TODO Lock*/ return retransmissionTimeout; }
+    inline chrono::milliseconds& RetransmissionTimeout() { /* TODO Lock*/ return retransmissionTimeout; }
     boost::system::error_code waitForSendWindow(/*timeout*/);
 
     void Start() {
