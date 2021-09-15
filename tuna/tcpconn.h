@@ -1,283 +1,250 @@
+#ifndef __TUNA_CONN_H__
+#define __TUNA_CONN_H__
+
 #include <iostream>
 #include <memory>
-#include <functional>
-#include <future>
+#include <atomic>
 #include <chrono>
-#include <cassert>
-// #include <thread>
 
 #include <pplx/pplxtasks.h>
 #include <boost/asio.hpp>
 
 #include "include/byteslice.h"
-#include "include/crypto/hex.h"
-#include "tuna/message.h"
-
+#include "tuna/interface.h"
+#include "tuna/error.h"
 
 namespace NKN {
 namespace TUNA {
-// using namespace std;
-// using namespace web;
+
+using namespace std;
 using namespace boost::system;
 using namespace boost::asio;
-using namespace boost::asio::ip;
 
 typedef class TCPConn TCPConn_t;
-class TCPConn: public std::enable_shared_from_this<TCPConn> {
+class TCPConn: public Conn/*, public std::enable_shared_from_this<TCPConn>*/ {
 public:
+
     constexpr static size_t MAX_BUFF_SIZE = 4096;
-    typedef enum {
-        CREATED,
-        DIALING,
-        CONNECTED,
-        DISCONNECTED,
-        CLOSED,
-    } state_t;
 
     TCPConn(const string& host, uint16_t port)
         : io_context_()
-        , endpoints_(tcp::resolver(io_context_).resolve(host, to_string(port)))
+        , remote_eps_(ip::tcp::resolver(io_context_).resolve(host, to_string(port)))
         , socket_(io_context_)
-        , dial_deadline_(io_context_)
-        , work_guard(make_work_guard(io_context_))
-        , state(CREATED)
-        , io_thrd(std::async(launch::async, [](io_context& io){ io.run(); }, std::ref(io_context_)))
-    {
-        fprintf(stderr, "%s:%d: \n", __PRETTY_FUNCTION__, __LINE__);
-    }
+    {}
 
-    TCPConn(const tcp::resolver::results_type& endpoints)
-        : io_context_()
-        , endpoints_(endpoints)
-        , socket_(io_context_)
-        , dial_deadline_(io_context_)
-        , work_guard(make_work_guard(io_context_))
-        , state(CREATED)
-        , io_thrd(std::async(launch::async, [](io_context& io){ io.run(); }, std::ref(io_context_)))
-    {
-        fprintf(stderr, "%s:%d: \n", __PRETTY_FUNCTION__, __LINE__);
-    }
-
-    /* void start() {
-        do_connect(endpoints_.begin());
-        dial_deadline_.async_wait(std::bind(&TCPConn::check_deadline, this));
-    } */
-
-    pplx::task<boost::system::error_code> Dial(/*tcp::endpoint ep,*/ int timeout) {
-        fprintf(stderr, "%s:%d: \n", __PRETTY_FUNCTION__, __LINE__);
-        switch (state.load()) {
-            case CREATED:
-            case DISCONNECTED:
-                break;
-            case DIALING:
-            case CONNECTED:
-                fprintf(stderr, "%s:%d: Connected already.\n", __PRETTY_FUNCTION__, __LINE__);
-                return pplx::task_from_result<boost::system::error_code>(boost::asio::error::already_connected);
-                // return pplx::task_from_result(boost::system::errc::make_error_code(boost::system::errc::already_connected));
-            case CLOSED:
-                fprintf(stderr, "%s:%d: Connection has closed.\n", __PRETTY_FUNCTION__, __LINE__);
-                return pplx::task_from_result<boost::system::error_code>(boost::asio::error::connection_aborted);
-                // return pplx::task_from_result(boost::system::errc::make_error_code(boost::system::errc::connection_aborted));
+    void _connHandler(pplx::task_completion_event<boost_err>& tce,
+            ip::tcp::resolver::results_type::const_iterator ep, const boost_err& err) {
+        if (!err) { // if Success
+            // save ep
+            tce.set(err);
+            return;
         }
 
-        /* if (! socket_.is_open()) {
-            connect_tce.set(boost::asio::error::broken_pipe);
-            return pplx::task<boost::system::error_code>(connect_tce);
-        } */
-        // if (ep_it == endpoints_.end()) {
-        //     ;
-        // }
+        if (isStoped_) {
+            tce.set(ErrCode::ErrConnClosed);
+            return;
+        }
 
-        auto self(this->shared_from_this());
+        if (++ep == remote_eps_.cend()) { // error and iter->next reached end
+            tce.set(err);
+            return;
+        }
 
-        state = DIALING;
-        socket_.async_connect(*endpoints_.begin(), [self](const boost::system::error_code& err){
-            if (err) { // handle error
-                self->state = DISCONNECTED;
-                self->connect_tce.set(err);
-                // self->dial_deadline_.expires_at(steady_timer::time_point::max());    // cancel deadline
-                return;
-            }
-            // handle success
-            self->dial_deadline_.expires_at(steady_timer::time_point::max());    // cancel deadline
-            self->state = CONNECTED;
-            self->connect_tce.set(boost::system::errc::make_error_code(boost::system::errc::success));
-
-            fprintf(stderr, "%s:%d Connect success\n", __PRETTY_FUNCTION__, __LINE__);
-            self->do_read();    // start recursive read
-        });
-
-        // set deadline
-        dial_deadline_.expires_after(std::chrono::milliseconds(timeout));
-        dial_deadline_.async_wait([self](const boost::system::error_code& err){
-            if (err) {
-                fprintf(stderr, "dial_deadline_.async_wait:%d met error: ", __LINE__);
-                cerr << err.message() << ":" << err.value() << endl;
-                return;
-            }
-            fprintf(stderr, "dial_deadline_:%d was triggered\n", __LINE__);
-
-            boost::system::error_code ec;
-            self->socket_.cancel(ec); // cancel asio
-            if (err) {
-                fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-                cerr << err.message() << ":" << err.value() << endl;
-            }
-
-            self->state = DISCONNECTED;
-            self->connect_tce.set(boost::system::errc::make_error_code(boost::system::errc::timed_out));
-        });
-
-        return pplx::task<boost::system::error_code>(connect_tce);
+        socket_.async_connect(*ep, std::bind(&TCPConn::_connHandler, this, tce, ep, std::placeholders::_1));
     }
 
-    // pplx::task<boost::system::error_code> Write(const byteSlice& data) {
-    size_t Write(const byteSlice& data) {
-        fprintf(stderr, "%s:%d send data: ", __PRETTY_FUNCTION__, __LINE__);
-        cerr << HEX::EncodeToString(data) << '\n';
+    pplx::task<boost_err> Dial(uint32_t timeout) {
+        if (isStoped_) {
+            return pplx::task_from_result(boost_err(ErrCode::ErrConnClosed));
+        }
 
-        uint32_t len = u32ToLSB(data.length());
-        size_t n = write(socket_, buffer(&len, sizeof(uint32_t)));
-        assert(n == sizeof(uint32_t));
+        pplx::task_completion_event<boost_err> tce;
+        auto ep = remote_eps_.cbegin();
+        socket_.async_connect(*ep, std::bind(&TCPConn::_connHandler, this, tce, ep, std::placeholders::_1));
 
-        // pplx::task_completion_event<size_t> tce;
-        n = write(socket_, buffer(data.data(), data.length()));
-        assert(n == data.length());
+        io_context_.restart();
+        io_context_.run_for(std::chrono::milliseconds(timeout));
+        if (!io_context_.stopped()) {   // timeout
+            tce.set(ErrCode::ErrMaxWait);
+            io_context_.stop();
+        }
 
-        return n;
-        // return pplx::task_from_result<boost::system::error_code>(ErrCode::Success);
+        return pplx::create_task(tce);
     }
 
-    string LocalAddr() {
+    inline std::string LocalAddr() final {
         auto ep = socket_.local_endpoint();
         return ep.address().to_string() + ":" + to_string(ep.port());
     }
 
-    string RemoteAddr() {
+    inline std::string RemoteAddr() final {
         auto ep = socket_.remote_endpoint();
         return ep.address().to_string() + ":" + to_string(ep.port());
     }
 
-    boost::system::error_code Close() {
-        fprintf(stderr, "%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
-        stopped_ = true;
-        state = CLOSED;
-        dial_deadline_.cancel();
-        work_guard.reset();
-        boost::system::error_code err;
+    boost_err Close() final {
+        isStoped_ = true;
+        boost_err err;
         socket_.close(err);
+        io_context_.stop();
         return err;
     }
 
-    inline void set_msg_handler(const std::function<void(shared_ptr<MsgFrame_t>)>& fn) {
-        external_msg_handler = fn;
+    inline shared_ptr<byteSlice> readMessage(size_t maxMsgSize) {
+        auto ret = make_shared<byteSlice>(maxMsgSize, 0);
+        auto n = Read(*ret, maxMsgSize);
+        return ret;
     }
 
-private:
-    /* void check_deadline() {
-        if (stopped_)
-            return;
+    size_t Read(byteSlice& out, size_t maxMsgSize) final {
+        boost_err err;
 
-        if (dial_deadline_.expiry() <= steady_timer::clock_type::now()) {
-            socket_.close();    // close socket to cancel any ongoing asynchronous operations
-            dial_deadline_.expires_at(steady_timer::time_point::max());
+        // set deadline
+        steady_timer timer(io_context_);
+        timer.expires_after(std::chrono::milliseconds(3000));
+        timer.async_wait([&err,this](const boost_err& ec){
+            if (ec) {  // aborted by err code
+                err = ec;
+                return;
+            }
+            socket_.cancel();   // timeout
+        });
+
+        uint32_t len = 0;
+        size_t n = read(socket_, buffer(&len, sizeof(uint32_t)), err);
+        assert (n == sizeof(uint32_t));
+
+        n = u32FromLSB((char*)&len);
+        if (n > maxMsgSize) { // if n too large
+            err = ErrCode::ErrDataSizeTooLarge;
+            return 0;
         }
 
-        dial_deadline_.async_wait(std::bind(&TCPConn::check_deadline, this));
-    } */
+        out.resize(n, 0);
+        len = read(socket_, buffer((void*)out.data(), n), err);
+        assert (len == n);
 
-    /* void do_connect(ip::tcp::resolver::results_type::iterator ep_it) {
-        if (ep_it == endpoints_.end()) {
-            Close();
-            return;
+        if (err) {
+            fprintf(stderr, "%s:%d met err: ", __PRETTY_FUNCTION__, __LINE__);
+            cerr << err.message() << '\n';
         }
 
-        cout << "Connecting to " << ep_it->endpoint() << "...\n";
-        dial_deadline_.expires_after(std::chrono::seconds(60));
+        return n;
+    }
 
-        auto self(shared_from_this());
-        socket_.async_connect(ep_it->endpoint(), std::bind(
-            [](const boost::system::error_code& err,
-                decltype(self) self,  ip::tcp::resolver::results_type::iterator ep_it) {
-                if (self->stopped_) {
-                    fprintf(stdout, "TCPConn[%p] was stopped\n", self.get());
-                    return;
-                }
+    /* size_t Read_async(byteSlice& out) {
+        boost_err ec;
 
-                if (! self->socket_.is_open()) {
-                    cout << "Connect " << ep_it->endpoint() << " timed out\n";
-                    self->do_connect(++ep_it);
-                    return;
-                }
+        auto read_body = [&ec](const boost_err& err, size_t n) -> void {
+            if (err) {
+                // log err
+                ec = err;
+            } else {
+                ec = ErrCode::Success;
+            }
+        };
 
+        uint32_t len = 0;
+        async_read(socket_, buffer(&len, sizeof(uint32_t)),
+            [&read_body,&out,&ec,&len,this](const boost_err& err, size_t n){
                 if (err) {
-                    cout << "Connect " << ep_it->endpoint() << " met error: " << err.message();
-                    self->do_connect(++ep_it);
+                    ec = err;
                     return;
                 }
+                assert(n == sizeof(uint32_t));
 
-                cout << "Connected to " << ep_it->endpoint() << "\n";
-                self->do_read();
-            }, std::placeholders::_1, self, ep_it)
+                uint32_t cnt = this->u32FromLSB((char*)&len);
+                out.resize(cnt, 0);  // resize out with cnt
+                async_read(socket_, buffer((void*)out.data(), cnt), read_body);
+            }
         );
+
+        io_context_.restart();
+        io_context_.run_for(std::chrono::milliseconds(3000));
+        if (!io_context_.stopped()) {   // timeout
+            io_context_.stop();
+            if (!ec) {
+                ec = ErrCode::ErrMaxWait;
+            }
+        }
+
+        if (ec) {
+            // log err code
+        }
+
+        return out.length();
     } */
 
-    void do_read() {
-        // fprintf(stderr, "%s:%d entry... \n", __PRETTY_FUNCTION__, __LINE__);
-        auto self(shared_from_this());
-        auto fr = make_shared<MsgFrame_t>(MsgFrame_t::PAGE, true);
-        async_read(socket_, buffer(fr->p, sizeof(uint32_t)),
-            std::bind(&TCPConn::read_frame_len, this, std::placeholders::_1, std::placeholders::_2, fr)
-        );
-    }
+    size_t Write(const byteSlice& data) final {
+        boost_err err;
 
-    void read_frame_len(const boost::system::error_code& err, std::size_t n, shared_ptr<MsgFrame_t> frame) {
-        if (err) {
-            fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-            cerr << err.message() << endl;
+        // set deadline
+        steady_timer timer(io_context_);
+        timer.expires_after(std::chrono::milliseconds(3000));
+        timer.async_wait([&err,this](const boost_err& ec){
+            if (ec) {  // aborted by err code
+                err = ec;
+                return;
+            }
+            socket_.cancel();
+        });
 
-            // TODO reset socket_ or reconnect?
-            this_thread::sleep_for(std::chrono::milliseconds(500));
-            do_read();
-            return;
-        }
-        if (n==0) {
-            fprintf(stderr, "Trigger read_frame_len with %zu bytes read\n", n);
-            this_thread::sleep_for(std::chrono::milliseconds(500));
-            do_read();
-        }
+        uint32_t len = u32ToLSB(data.length());
+        auto n = write(socket_, buffer(&len, sizeof(uint32_t)), err);
+        assert (n == sizeof(uint32_t));
 
-        assert(n == sizeof(uint32_t));
-
-        dial_deadline_.expires_after(std::chrono::milliseconds(5*1000));
-
-        uint32_t len = u32FromLSB(frame->p);
-        assert(len <= 4*1024);
-        frame->buff->len = len;
-        async_read(socket_, buffer(frame->buff->data, len),
-            std::bind(&TCPConn::read_frame_body, this, std::placeholders::_1, std::placeholders::_2, frame)
-        );
-    }
-
-    void read_frame_body(const boost::system::error_code& err, std::size_t n, shared_ptr<MsgFrame_t> frame) {
-        fprintf(stderr, "%s:%d entry... \n", __PRETTY_FUNCTION__, __LINE__);
-        dial_deadline_.expires_at(steady_timer::time_point::max());
+        n = write(socket_, buffer(data.data(), data.length()), err);
+        assert (n == data.length());
 
         if (err) {
-            fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-            cerr << err.message() << endl;
-            this_thread::sleep_for(std::chrono::milliseconds(500));
-            do_read();
-            return;
-        }
-        assert(n == frame->buff->len);
-
-        if (external_msg_handler) {
-            external_msg_handler(frame);
+            fprintf(stderr, "%s:%d met err: ", __PRETTY_FUNCTION__, __LINE__);
+            cerr << err.message() << '\n';
         }
 
-        do_read();
+        return n;
     }
+
+    /* size_t Write_async(const byteSlice& data) {
+        boost_err ec;
+        size_t cnt = 0;
+
+        auto write_body = [&ec,&cnt](const boost_err& err, size_t n){
+            cnt = n;
+            if (err) {
+                ec = err;
+            } else {
+                ec = ErrCode::Success;
+            }
+        };
+
+        uint32_t len = u32ToLSB(data.length());
+        async_write(socket_, buffer(&len, sizeof(uint32_t)),
+            [&write_body,&ec,&data,this](const boost_err& err, size_t n){
+                if (err) {
+                    ec = err;
+                    return;
+                }
+                assert(n == sizeof(uint32_t));
+
+                async_write(this->socket_, buffer(data.data(), data.length()), write_body);
+            }
+        );
+
+        io_context_.restart();
+        io_context_.run_for(std::chrono::milliseconds(3000));
+        if (!io_context_.stopped()) {   // timeout
+            io_context_.stop();
+            if (!ec) {
+                ec = ErrCode::ErrMaxWait;
+            }
+        }
+
+        if (ec) {
+            // log err code
+        }
+
+        return cnt;
+    } */
 
     inline uint32_t u32FromLSB(char* p) {
         return uint32_t(p[0] | p[1]<<8 | p[2]<<16 | p[3]<<24);
@@ -290,62 +257,14 @@ private:
         return ret;
     }
 
-    void write_frame_len(const boost::system::error_code& err, std::size_t n, shared_ptr<MsgFrame_t> frame) {
-        if (err) {
-            fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-            cerr << err.message() << endl;
-            send_tce.set(err);
-            return;
-        }
-
-        if (n==0) {
-            fprintf(stderr, "Trigger write_frame_len with %zu bytes read\n", n);
-            send_tce.set(boost::asio::error::no_data);
-            // TODO retry
-            // return;
-        }
-        fprintf(stderr, "%s:%d %zu bytes success\n", __PRETTY_FUNCTION__, __LINE__, n);
-        assert(n == sizeof(uint32_t));
-
-        fprintf(stderr, "write_frame_len:%d\n", __LINE__);
-
-        // TODO deadline_
-        async_write(socket_, buffer(frame->buff->data, frame->buff->len),
-                std::bind(&TCPConn::write_frame_body, this, std::placeholders::_1, std::placeholders::_2, frame));
-    }
-
-    void write_frame_body(const boost::system::error_code& err, std::size_t n, shared_ptr<MsgFrame_t> frame) {
-        if (err) {
-            fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-            cerr << err.message() << endl;
-            send_tce.set(err);
-            return;
-        }
-
-        if (n==0) {
-            fprintf(stderr, "Trigger write_frame_body with %zu bytes read\n", n);
-            send_tce.set(boost::asio::error::in_progress);
-            // return;
-        }
-        fprintf(stderr, "%s:%d %zu bytes success\n", __PRETTY_FUNCTION__, __LINE__, n);
-        assert(n == frame->buff->len);
-        send_tce.set(boost::system::errc::make_error_code(boost::system::errc::success));
-    }
-
-    bool stopped_ = false;
+private:
+    atomic_bool isStoped_;
     io_context          io_context_;
-    ip::tcp::resolver::results_type endpoints_;
+    ip::tcp::resolver::results_type remote_eps_;
     ip::tcp::socket     socket_;
-    steady_timer        dial_deadline_;
-    executor_work_guard<io_context::executor_type> work_guard;
-    std::atomic<state_t> state;
-    pplx::task_completion_event<boost::system::error_code> connect_tce;
-    pplx::task_completion_event<boost::system::error_code> send_tce;
-    // pplx::task_completion_event<boost::system::error_code> recv_tce;
-
-    std::future<void>   io_thrd;
-    std::function<void(shared_ptr<MsgFrame_t>)> external_msg_handler;
-    // array<char, MAX_BUFF_SIZE> buffer_;
-};  // class TCPConn
+};
+using namespace boost::system;
+using namespace boost::asio;
 };  // namespace TUNA
 };  // namespace NKN
+#endif // __TUNA_CONN_H__

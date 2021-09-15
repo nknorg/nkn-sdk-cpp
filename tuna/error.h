@@ -7,12 +7,16 @@
 
 namespace NKN {
 namespace TUNA {
+    typedef boost::system::error_code boost_err;
+
     enum class ErrCode {
         Success = 0,
         ErrNullConnection = 1,
         ErrOperationAborted = 2,
         ErrInvalidPacket = 3,
+        ErrDataSizeTooLarge = 6,
         ErrConnClosed = 11,
+        ErrMaxWait = 12,
     };
 };  // namespace TUNA
 };  // namespace NKN

@@ -16,10 +16,15 @@
 #include "include/channel.h"
 #include "include/byteslice.h"
 #include "tuna/interface.h"
+#include "tuna/client.h"
 #include "ncp/config.h"
 #include "ncp/pb/packet.pb.h"
 
 namespace NKN {
+namespace TUNA {
+typedef class TunaSessionClient TunaCli_t;
+typedef shared_ptr<TunaCli_t>   TunaCli_Ptr;
+};
 namespace NCP {
 using namespace std;
 
@@ -31,7 +36,7 @@ public:
     friend class Connection;
 
     typedef chrono::time_point<chrono::steady_clock> time_point;
-    typedef boost::system::error_code (*SendWithFunc)(const string& localID, const string& remoteID,
+    typedef boost::system::error_code (*SendWithFunc)(const TUNA::TunaCli_Ptr tuna, const string& localID, const string& remoteID,
                                                         shared_ptr<string> buf, const chrono::milliseconds& writeTimeout);
     typedef shared_ptr<Connection_t> ConnectionPtr_t;
     template<typename K_t, typename V_t>
@@ -42,13 +47,13 @@ public:
     Session_t& operator=(const Session_t& sess) = delete;
     Session(const string& localAddr, const string& remoteAddr,
             const vector<string>& localCliIDs, const vector<string>& remoteCliIDs,
-            SendWithFunc fn, shared_ptr<Config_t> cfg=nullptr);
+            TUNA::TunaCli_Ptr tuna, SendWithFunc fn, shared_ptr<Config_t> cfg=nullptr);
 
     static inline shared_ptr<Session_t> NewSession(
             const string& localAddr, const string& remoteAddr,
             const vector<string>& localCliIDs, const vector<string>& remoteClientIDs,
-            SendWithFunc fn, shared_ptr<Config_t> cfg=nullptr) {
-        return make_shared<Session_t>(localAddr, remoteAddr, localCliIDs, remoteClientIDs, fn, cfg);
+            TUNA::TunaCli_Ptr tuna, SendWithFunc fn, shared_ptr<Config_t> cfg=nullptr) {
+        return make_shared<Session_t>(localAddr, remoteAddr, localCliIDs, remoteClientIDs, tuna, fn, cfg);
     }
 
     inline bool IsStream()      { return !config->NonStream; }
@@ -116,7 +121,7 @@ public:
     // NKN::Conn_t interface
     virtual inline string LocalAddr()    final { return localAddr; }
     virtual inline string RemoteAddr()   final { return remoteAddr; }
-    virtual size_t Read(byteSlice&) final;
+    virtual size_t Read(byteSlice&, size_t) final;
     virtual size_t Write(const byteSlice&) final;
     virtual boost::system::error_code Close() final;
 
@@ -129,6 +134,7 @@ private:
     string remoteAddr;
     vector<string> localClientIDs;
     vector<string> remoteClientIDs;
+    TUNA::TunaCli_Ptr  tunaCli;
     SendWithFunc sendWith;
 
     atomic<uint32_t> sendWindowSize;

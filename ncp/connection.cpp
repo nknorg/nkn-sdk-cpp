@@ -80,7 +80,7 @@ boost::system::error_code Connection::tx() {
             continue;
         }
 
-        ec = session->sendWith(localClientID, remoteClientID, data, retransmissionTimeout);
+        ec = session->sendWith(session->tunaCli, localClientID, remoteClientID, data, retransmissionTimeout);
         if (ec) {
             if (session->IsClosed())
                 return ErrCode::ErrSessionClosed;
@@ -151,7 +151,7 @@ boost::system::error_code Connection::sendAck() {
         auto raw = make_shared<string>(pktPtr->ByteSizeLong(), 0);
         pktPtr->SerializeToArray((void*)raw->data(), raw->length());
 
-        auto err = session->sendWith(localClientID, remoteClientID, raw, retransmissionTimeout);
+        auto err = session->sendWith(session->tunaCli, localClientID, remoteClientID, raw, retransmissionTimeout);
         if (err) {
             // TODO
             this_thread::sleep_for(chrono::seconds(1));

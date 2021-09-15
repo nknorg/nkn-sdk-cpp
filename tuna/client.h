@@ -28,7 +28,6 @@
 #include "client/client.h"
 
 #include "ncp/config.h"
-#include "ncp/error.h"
 #include "ncp/session.h"
 #include "tuna/config.h"
 #include "tuna/error.h"
@@ -45,7 +44,7 @@ using namespace std;
 constexpr uint32_t maxSessionMsgOverhead = 1024;
 
 typedef class TunaSessionClient TunaSessionClient_t;
-class TunaSessionClient {
+class TunaSessionClient: public std::enable_shared_from_this<TunaSessionClient> {
 public:
     typedef shared_ptr<TunaSessionClient_t> TunaSessCliPtr_t;
     typedef shared_ptr<Config_t>            ConfigPtr_t;
@@ -56,6 +55,7 @@ public:
     typedef shared_ptr<Uint256>             Uint256Ptr_t;
     typedef shared_ptr<const Client::Address_t>   AddressPtr_t;
     typedef std::chrono::time_point<std::chrono::steady_clock>  ptime_t;
+    typedef boost::system::error_code       boost_err;
 
     template<typename K_t, typename V_t>
     using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
@@ -87,218 +87,28 @@ public:
     std::future<void> sessCleaner;
     // boost::thread*  AsyncThrd;
 
-    TunaSessionClient(AccountPtr_t acc, MClientPtr_t cli, WalletPtr_t wal, ConfigPtr_t cfg)
-        : isClosed(false)
-          , config(Config::MergedConfig(cfg))
-          , wallet(wal)
-          , clientAccount(acc)
-          , multiClient(cli)
-          , addr(cli->addr)
-          , sessions()
-          , sessionConns()
-          , sharedKeys()
-          , connCount()
-          , closedSessionKey()
-          , async_io()
-    {
-        sessCleaner = std::async(launch::async, [this](uint32_t interval){
-            while (!isClosed) {
-                this_thread::sleep_for(std::chrono::milliseconds(interval));
-
-                // TODO Lock
-                for (auto it=this->sessions->cbegin(); it != this->sessions->cend(); ) {
-                    const string& sessKey = it->first;
-                    const shared_ptr<NCP::Session_t>& sess = it->second;
-
-                    if (!sess->IsClosed()) {
-                        it++;
-                        continue;
-                    }
-
-                    for (auto& kv: this->sessionConns->at(sessKey)) {
-                        kv.second->Close();
-                    }
-                    this->sessionConns->erase(sessKey);
-                    this->connCount->erase(sessKey);
-                    (*(this->closedSessionKey))[sessKey] = std::chrono::steady_clock::now();
-                    it = this->sessions->erase(it);
-                }   // UnLock
-            }
-        }, 1000);
-    }
+    TunaSessionClient(AccountPtr_t acc, MClientPtr_t cli, WalletPtr_t wal, ConfigPtr_t cfg);
 
     inline static TunaSessCliPtr_t NewTunaSessionClient(AccountPtr_t acc, MClientPtr_t cli, WalletPtr_t wal, ConfigPtr_t cfg) {
         return make_shared<TunaSessionClient_t>(acc, cli, wal, cfg);
     }
 
     inline virtual ConnPtr_t Dial(const string& remoteAddr) final {
-        return DialSession(remoteAddr);
+        return dynamic_pointer_cast<Conn_t>(DialSession(remoteAddr));
     }
 
     inline virtual SessionPtr_t DialSession(const string& remoteAddr) final {
         return DialWithConfig(remoteAddr, nullptr);
     }
 
-    SessionPtr_t DialWithConfig(const string& remoteAddr, shared_ptr<DialConfig_t> cfg=nullptr) {
-        auto dialCfg = DialConfig::MergeDialConfig(config->SessionConfig, cfg);
-
-        // TODO set timeout with dialCfg->DialTimeout
-        auto jsStr = NewJson(initializer_list<kvPair_t>({
-                                kvPair_t("action", "getPubAddr"),
-                            }))->serialize();
-        auto recv_ch = multiClient->Send(vector<string>{remoteAddr}, static_cast<byteSlice&>(jsStr));
-        auto resp = recv_ch->pop(false, std::chrono::milliseconds(dialCfg->DialTimeout));
-        if (!resp) {
-            // TODO log error
-            return nullptr;
-        }
-
-        auto addrs = PubAddrs::NewFromMsg(resp->Data);
-        if (!addrs) {
-            // TODO log error
-            return nullptr;
-        }
-
-        auto sessionID = Uint64::Random<string>();
-        auto meta = make_shared<pb::SessionMetadata>();
-        meta->set_allocated_id(&sessionID);
-
-        string sessKey = remoteAddr+sessionID;
-        sessionConns->emplace(sessKey, map<string, shared_ptr<TCPConn_t>>());
-        auto& conn_map = (*sessionConns)[sessKey];
-
-        for (size_t idx=0; idx<addrs->size(); idx++) {
-            auto addr = (*addrs)[idx];
-            auto conn = make_shared<TCPConn_t>(addr->IP, (uint16_t)addr->Port);
-            // TODO conn->set_msg_handler
-
-            auto err = conn->Dial(5*1000)
-                .then([conn,this,remoteAddr,meta](const boost::system::error_code& err){
-                    if (err)    return err;
-
-                    auto ec = conn->Write(this->addr->String()).get();
-                    if (ec)    return ec;
-
-                    // Send pb.SessionMetadata
-                    auto nonce  = Uint192::Random<shared_ptr<Uint192>>();
-                    auto cipher = this->encode(meta->SerializeAsString(), make_shared<Client::Address_t>(remoteAddr));
-
-                    return conn->Write(*cipher).get();
-                }).get();
-
-            // if err, log err and close conn
-            if (! err) {
-                conn_map[to_string(idx)] = conn;
-            }
-        }
-
-        if(conn_map.size() == 0) {
-            // TODO all Dial failed
-        }
-
-        vector<string> conn_list;
-        for (auto& kv: conn_map) {
-            conn_list.emplace_back(kv.first);
-        }
-
-        auto sess = newSession(remoteAddr, sessionID, conn_list, config->SessionConfig);
-        if (sess == nullptr) {
-            return nullptr;
-        }
-
-        (*sessions)[sessKey] = sess;
-        for (auto& it: conn_map) {
-            if (it.second != nullptr) {
-                int idx = std::stoi(it.first);
-                shared_ptr<TCPConn_t> conn = it.second;
-                std::thread([this,sessKey,idx,conn](){
-                    this->handleConn(conn, sessKey, idx);
-                    conn->Close();
-                }).detach();
-            }
-        }
-
-        auto err = sess->Dial(/*timeout*/);
-        if (err) {
-            return nullptr;
-        }
-        return sess;
-    }
+    SessionPtr_t DialWithConfig(const string& remoteAddr, shared_ptr<DialConfig_t> cfg=nullptr);
 
     shared_ptr<NCP::Session> newSession(const string& remoteAddr,
-            const string& sessionID, const vector<string>& connIDs, shared_ptr<NCP::Config> cfg) {
-        auto sessKey = remoteAddr + sessionID;
-        return NCP::Session::NewSession(addr, remoteAddr, connIDs, {},
-                    [this,sessKey,remoteAddr](const string& connID, const string&,
-                        shared_ptr<string> buf, const std::chrono::milliseconds& ) -> boost::system::error_code {
-                    shared_ptr<TCPConn_t> conn = (*this->sessionConns)[sessKey][connID];
-                    if (conn == nullptr) {
-                        return ErrCode::ErrNullConnection;
-                    }
+            const string& sessionID, const vector<string>& connIDs, shared_ptr<NCP::Config> cfg);
 
-                    auto remote = make_shared<Client::Address_t>(remoteAddr);
-                    auto cipher = this->encode(*buf, remote);
-                    auto n = conn->Write(*cipher);
-                    return n == cipher->size() ? ErrCode::Success : ErrCode::ErrOperationAborted;
-            }, cfg);
-    }
+    void handleConn(shared_ptr<TCPConn_t> conn, const string& sessKey, int idx);
 
-    void handleConn(shared_ptr<TCPConn_t> conn, const string& sessKey, int idx) {
-        if (sessions->count(sessKey) == 0) {
-            // log
-            return;
-        }
-
-        SessionPtr_t sess = (*sessions)[sessKey];
-        if (sess == nullptr) {
-            // log
-            return;
-        }
-
-        if (connCount->count(sessKey) == 0) {
-            (*connCount)[sessKey] = 0;
-        }
-        (*connCount)[sessKey]++;
-
-        while (!sess->IsClosed()) {
-            auto err = handleMsg(conn, sess, idx);
-            if (err) {
-                if (err == NCP::ErrCode::ErrSessionClosed || err == boost::asio::error::eof) {
-                    break;
-                }
-                auto c = onClose.pop(true);
-                if (c && *c) {
-                    break;
-                }
-                // log err
-            }
-        }
-
-        auto conn_cnt = (*connCount)[sessKey];
-        if (--conn_cnt == 0) {
-            sessions->erase(sessKey);
-            sessionConns->erase(sessKey);
-            connCount->erase(sessKey);
-            (*closedSessionKey)[sessKey] = std::chrono::steady_clock::now();
-            sess->Close();
-        }
-    }
-
-    boost::system::error_code handleMsg(shared_ptr<TCPConn_t> conn, SessionPtr_t sess, int idx) {
-        auto data = readMessage(conn, config->SessionConfig->MTU + maxSessionMsgOverhead);
-        if (data == nullptr) {
-            // log
-            return ErrCode::ErrOperationAborted;
-        }
-
-        auto plain = decode(*data, make_shared<Client::Address_t>(sess->RemoteAddr()));
-        if (plain == nullptr) {
-            // log
-            return ErrCode::ErrInvalidPacket;
-        }
-
-        return sess->ReceiveWith(to_string(idx), to_string(idx), plain);
-    }
+    boost::system::error_code handleMsg(shared_ptr<TCPConn_t> conn, SessionPtr_t sess, int idx);
 
     shared_ptr<string> encode(const byteSlice& msg, AddressPtr_t remote) {
         auto nonce  = Uint192::Random<shared_ptr<Uint192>>();
@@ -318,7 +128,7 @@ public:
         auto shareKey = SecretBox::Precompute<shared_ptr<Uint256>>(
                                                 remote->pubKey->toCurvePubKey<Uint256>(),
                                                 clientAccount->GetCurvePrivKey());
-        auto nonce = make_shared<Uint192>(cipher, NONCESIZE, Uint192::FORMAT::BINARY);
+        auto nonce = make_shared<Uint192>((char*)cipher, NONCESIZE, Uint192::FORMAT::BINARY);
         return SecretBox::Decrypt<basic_string,char>(cipher+NONCESIZE, len-NONCESIZE, shareKey, nonce);
     }
 

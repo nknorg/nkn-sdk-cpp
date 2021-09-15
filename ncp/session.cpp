@@ -17,11 +17,11 @@ using namespace std;
 
 Session::Session(const string& localAddr, const string& remoteAddr,
         const vector<string>& localCliIDs, const vector<string>& remoteCliIDs,
-        SendWithFunc fn, shared_ptr<Config_t> cfg)
+        TUNA::TunaCli_Ptr tuna, SendWithFunc fn, shared_ptr<Config_t> cfg)
     : config(Config::MergeDefaultConfig(cfg))
         , localAddr(localAddr), remoteAddr(remoteAddr)
         , localClientIDs(localCliIDs) , remoteClientIDs(remoteCliIDs)
-        , sendWith(fn)
+        , tunaCli(tuna), sendWith(fn)
         , sendWindowSize(config->SessionWindowSize)
         , recvWindowSize(config->SessionWindowSize)
         , sendMtu(config->MTU)
@@ -176,7 +176,7 @@ boost::system::error_code Session::sendClosePacket() {
     for (auto it=connections->cbegin(); it!=connections->cend(); it++) {
         ConnectionPtr_t conn = it->second;
         pplx::create_task(
-            std::bind(this->sendWith, conn->localClientID, conn->remoteClientID, serialized, conn->RetransmissionTimeout())
+            std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, serialized, conn->RetransmissionTimeout())
         ).then([&err_cnt,&send_tce,cnt](const boost::system::error_code& err){
             if (err) {
                 err_cnt++;
@@ -217,7 +217,7 @@ boost::system::error_code Session::sendHandshakePacket(/*timeout*/) {
         for (auto it=connections->cbegin(); it!=connections->cend(); it++) {
             ConnectionPtr_t conn = it->second;
             pplx::create_task(
-                std::bind(this->sendWith, conn->localClientID, conn->remoteClientID, raw, conn->RetransmissionTimeout())
+                std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, raw, conn->RetransmissionTimeout())
             ).then([&err_cnt,&send_tce,cnt](const boost::system::error_code& err){
                 if (err) {
                     err_cnt++;
@@ -368,7 +368,7 @@ boost::system::error_code Session::startCheckBytesRead() {
         for (auto it=connections->cbegin(); it!=connections->cend(); it++) {
             ConnectionPtr_t conn = it->second;
             pplx::create_task(
-                std::bind(this->sendWith, conn->localClientID, conn->remoteClientID, raw, conn->RetransmissionTimeout())
+                std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, raw, conn->RetransmissionTimeout())
             ).then([&err_cnt,&send_tce,cnt](const boost::system::error_code& err){
                 if (err) {
                     err_cnt++;
@@ -464,7 +464,7 @@ size_t Session::Write(const byteSlice& data) {
     return sent;
 }
 
-size_t Session::Read(byteSlice& buf) {
+size_t Session::Read(byteSlice& buf, size_t) {
     if(IsClosed()) {    // if closed during channel waiting
         // log ErrCode::ErrSessionClosed
         return 0;

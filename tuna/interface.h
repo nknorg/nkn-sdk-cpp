@@ -17,7 +17,7 @@ public:
     virtual boost::system::error_code Close() = 0;
     virtual std::string LocalAddr()  = 0;
     virtual std::string RemoteAddr()  = 0;
-    virtual size_t Read(byteSlice& out) = 0;
+    virtual size_t Read(byteSlice& out, size_t maxMsgSize) = 0;
     virtual size_t Write(const byteSlice& in) = 0;
 } Conn_t;
 typedef std::shared_ptr<Conn_t> ConnPtr_t;
