@@ -6,7 +6,7 @@
 
 #include <boost/system/error_code.hpp>
 
-#include "include/byteslice.h"
+#include "byteslice.h"
 
 namespace NKN {
 namespace TUNA {

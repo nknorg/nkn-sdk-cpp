@@ -9,7 +9,7 @@
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 
-#include <include/uBigInt.h>
+#include <uBigInt.h>
 
 using namespace rapidjson;
 

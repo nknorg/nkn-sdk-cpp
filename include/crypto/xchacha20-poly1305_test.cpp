@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "include/uBigInt.h"
-#include "include/crypto/hex.h"
-#include "include/crypto/xchacha20-poly1305.h"
+#include "uBigInt.h"
+#include "crypto/hex.h"
+#include "crypto/xchacha20-poly1305.h"
 
 using namespace std;
 using namespace NKN;

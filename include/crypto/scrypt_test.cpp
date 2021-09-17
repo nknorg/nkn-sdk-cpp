@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "include/crypto/scrypt.h"
+#include "crypto/scrypt.h"
 
 using namespace std;
 using namespace NKN;

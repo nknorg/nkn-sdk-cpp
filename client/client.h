@@ -7,12 +7,12 @@
 #include <cpprest/ws_client.h>
 #include <safe_ptr.h>
 
-#include "include/unique_ptr_backporting.h"
-#include "include/crypto/secretbox.h"
-#include "include/wallet.h"
+#include "unique_ptr_backporting.h"
+#include "crypto/secretbox.h"
+#include "wallet.h"
 #include "message.h"
 #include "transaction/sigchain.h"
-#include "include/serialize.h"
+#include "serialize.h"
 #include "client/config.h"
 
 namespace NKN {

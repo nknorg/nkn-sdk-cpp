@@ -5,8 +5,8 @@
 #include <iomanip>
 #include <sstream>
 
-#include "include/uBigInt.h"
-#include "include/byteslice.h"
+#include "uBigInt.h"
+#include "byteslice.h"
 
 using namespace std;
 

@@ -6,7 +6,7 @@
 #include <stdexcept>
 // #include <cassert>
 
-#include <json/NKNCodec.h>
+#include "NKNCodec.h"
 
 using namespace rapidjson;
 using namespace NKN::JSON;

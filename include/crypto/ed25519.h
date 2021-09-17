@@ -3,10 +3,10 @@
 
 #include <sodium.h>
 
-#include "include/uBigInt.h"
-#include "include/byteslice.h"
-#include "include/crypto/hash.h"
-#include "include/crypto/base58.h"
+#include "uBigInt.h"
+#include "byteslice.h"
+#include "crypto/hash.h"
+#include "crypto/base58.h"
 
 using namespace std;
 

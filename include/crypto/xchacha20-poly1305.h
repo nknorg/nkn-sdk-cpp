@@ -6,7 +6,7 @@ extern "C" {
 }
 #define HMAC_LEN crypto_aead_xchacha20poly1305_ietf_ABYTES
 
-#include "include/uBigInt.h"
+#include "uBigInt.h"
 
 using namespace std;
 

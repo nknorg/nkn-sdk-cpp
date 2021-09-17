@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include "include/crypto/hash.h"
+#include "crypto/hash.h"
 
 using namespace std;
 using namespace NKN;

@@ -7,7 +7,7 @@
 
 #include <gmpxx.h>
 
-#include "include/uBigInt.h"
+#include "uBigInt.h"
 
 using namespace std;
 

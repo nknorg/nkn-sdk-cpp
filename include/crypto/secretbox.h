@@ -6,8 +6,8 @@
 
 #include <sodium.h>
 
-#include "include/crypto/hex.h"
-#include "include/uBigInt.h"
+#include "crypto/hex.h"
+#include "uBigInt.h"
 
 using namespace std;
 

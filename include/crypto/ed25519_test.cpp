@@ -1,7 +1,7 @@
 #include <iostream>
 #include <memory>
 
-#include "include/crypto/ed25519.h"
+#include "crypto/ed25519.h"
 
 using namespace std;
 using namespace NKN;

@@ -4,7 +4,7 @@
 #include <deque>
 #include <list>
 
-#include "include/crypto/random.h"
+#include "crypto/random.h"
 
 using namespace std;
 using namespace NKN;

@@ -8,8 +8,8 @@ extern "C" {
 #include <sodium.h>
 }
 
-#include "include/uBigInt.h"
-#include "include/SFINAE.h"
+#include "uBigInt.h"
+#include "SFINAE.h"
 
 using namespace std;
 

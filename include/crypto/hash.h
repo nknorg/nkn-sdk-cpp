@@ -9,7 +9,7 @@ extern "C" {
 #include <openssl/kdf.h>
 }
 
-#include "include/uBigInt.h"
+#include "uBigInt.h"
 
 using namespace std;
 
