@@ -3,13 +3,12 @@
 
 #include <boost/asio.hpp>
 #include <pplx/pplxtasks.h>
+#include <byteslice.h>
 
-#include "include/unique_ptr_backporting.h"
-
-#include "ncp/util.h"
-#include "ncp/error.h"
-#include "ncp/session.h"
-#include "ncp/connection.h"
+#include "util.h"
+#include "error.h"
+#include "session.h"
+#include "connection.h"
 
 namespace NKN {
 namespace NCP {

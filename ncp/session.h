@@ -13,12 +13,12 @@
 
 #include <safe_ptr.h>
 
-#include "include/channel.h"
-#include "include/byteslice.h"
-#include "tuna/interface.h"
-#include "tuna/client.h"
-#include "ncp/config.h"
-#include "ncp/pb/packet.pb.h"
+#include "channel.h"
+#include "byteslice.h"
+#include "interface.h"
+#include "client.h"
+#include "config.h"
+#include "pb/packet.pb.h"
 
 namespace NKN {
 namespace TUNA {
