@@ -109,7 +109,7 @@ boost::system::error_code Connection::sendAck() {
 
     boost::asio::deadline_timer t(io);
     auto interval = boost::posix_time::milliseconds(session->config->SendAckInterval);
-    while (true) {
+    while (!session->IsClosed()) {
         t.expires_from_now(interval, ec);
         t.wait(ec);
 
@@ -153,7 +153,9 @@ boost::system::error_code Connection::sendAck() {
 
         auto err = session->sendWith(session->tunaCli, localClientID, remoteClientID, raw, retransmissionTimeout);
         if (err) {
-            // TODO
+            if (err == ErrCode::ErrConnClosed) {
+                return err;
+            }
             this_thread::sleep_for(chrono::seconds(1));
             continue;
         }
