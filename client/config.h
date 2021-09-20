@@ -129,29 +129,10 @@ struct ClientConfig {
     }
 };
 
-const ClientConfig_t DefaultClientConfig = {
-    .SeedRPCServerAddr = nullptr,
-	.RPCTimeout        = 10000,
-	.RPCConcurrency    = 1,
-	.MsgChanLen        = 1024,
-	.ConnectRetries    = 3,
-	.MsgCacheExpiration= 300000,
-	.MsgCacheCleanupInterval = 60000,
-	.WsHandshakeTimeout= 5000,
-	.WsWriteTimeout    = 10000,
-	.MinReconnectInterval = 1000,
-	.MaxReconnectInterval = 64000,
-	.MessageConfig     = nullptr,
-	.SessionConfig     = nullptr,
-};
+extern const ClientConfig_t DefaultClientConfig;
 
 };  // namespace Client
 };  // namespace NKN
 
-std::ostream& operator<<(std::ostream &s, const vector<string>& vec) {
-    s << "[ ";
-    for (auto& e: vec)
-        s << e << ", ";
-    return s << " ]" << endl;
-}
+std::ostream& operator<<(std::ostream &s, const vector<string>& vec);
 #endif  // __NKN_CLIENT_CFG_H__

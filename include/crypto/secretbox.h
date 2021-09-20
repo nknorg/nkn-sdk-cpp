@@ -90,7 +90,7 @@ shared_ptr<C<CharT>> Decrypt(uint8_t* cipher, size_t len, shared_ptr<Uint256> ke
 
 template <typename T> const T Precompute(const Uint256& peerCurvePub, const Uint256& myCurvePriv);
 template<>
-const shared_ptr<vector<uint8_t>> Precompute<shared_ptr<vector<uint8_t>>>(const Uint256& peerCurvePub, const Uint256& myCurvePriv) {
+inline const shared_ptr<vector<uint8_t>> Precompute<shared_ptr<vector<uint8_t>>>(const Uint256& peerCurvePub, const Uint256& myCurvePriv) {
     const string peer = peerCurvePub.toBytes();
     const string me   = myCurvePriv.toBytes();
     auto shareKey = make_shared<vector<uint8_t>>(crypto_scalarmult_curve25519_BYTES, 0);

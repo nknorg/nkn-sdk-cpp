@@ -63,22 +63,9 @@ public:
     MultiClient(const MultiClient_t&) = delete;
     MultiClient& operator=(const MultiClient_t&) = delete;
 
-    MultiClient(Account_ptr acc, const string& baseIdentifier, int cliCnt, bool originalClient, ClientConfig_ptr cfg=nullptr)
-        : config(ClientConfig_t::MergeClientConfig(cfg))
-          , offset(originalClient)
-          // , addr(Address::MakeAddressString(acc->PublicKey, baseIdentifier))
-          , addr(make_shared<Address_t>(acc->PublicKey, baseIdentifier))
-          , OnConnect(1), OnMessage(config->MsgChanLen)
-          , isClosed(false), createDone(false)
-    {
-        for (int idx=0-offset; idx<cliCnt+offset; idx++) {
-            cli_thrd_grp.emplace_back(
-                std::async(launch::async, &MultiClient::subClient_handler, this, idx, acc, baseIdentifier)
-            );
-        }
-    }
+    MultiClient(Account_ptr acc, const string& baseIdentifier, int cliCnt, bool originalClient, ClientConfig_ptr cfg=nullptr);
 
-    ~MultiClient() {
+    inline ~MultiClient() {
         fprintf(stderr, "%s:%d %s[%p] destructor.\n", __PRETTY_FUNCTION__, __LINE__, addr->v.data(), this);
     }
 
@@ -112,22 +99,7 @@ public:
         return _send(dests, pld, !msgCfg->Unencrypted, msgCfg->MaxHoldingSeconds);
     }
 
-    bool Close() {
-        isClosed = true;
-
-        vector<future<int>> close_thrd_grp; // for future<int>.wait() in destructor
-        for_each(clients->cbegin(), clients->cend(), [&close_thrd_grp](decltype(clients)::obj_t::value_type kv){
-            close_thrd_grp.emplace_back(
-                std::async(launch::async, [](int idx, decltype(kv)::second_type cli){
-                    fprintf(stdout, "%s:%d waiting for close subClient[%d] ...\n", __PRETTY_FUNCTION__, __LINE__, idx);
-                    cli->Close();   //.get();
-                    fprintf(stdout, "%s:%d asynchronous close subClient[%d].\n", __PRETTY_FUNCTION__, __LINE__, idx);
-                    return idx;
-                }, kv.first, kv.second)
-            );
-        });
-        return isClosed;
-    }
+    bool Close();
 
 private:
     vector<std::future<void>> cli_thrd_grp;
@@ -192,20 +164,20 @@ private:
     bool sendWithClient(const int clientID, const vector<string>& dests,
             shared_ptr<payloads::Payload> pld, bool encrypted, int32_t maxHoldingSeconds) {
         auto cli_lst    = this->GetClients();
+
         if (cli_lst->count(clientID) == 0) {    // key not existed
+            fprintf(stderr, "No avaliable subClient[%d] to send\n", clientID);
             return false;   // TODO error code
         }
 
         auto cli = (*cli_lst)[clientID];
-        if (cli == nullptr)
+        if (cli == nullptr) {
+            fprintf(stderr, "subClient[%d] is nullptr\n", clientID);
             return false;
+        }
 
         return cli->_send(*addMultiClientPrefix(dests, clientID), pld, encrypted, maxHoldingSeconds);
     }
-    /* inline future<bool> sendWithClient_async(const int clientID, const vector<string>& dests,
-                shared_ptr<payloads::Payload> pld, bool encrypted, int32_t maxHoldingSeconds) {
-        return std::async(launch::async, &MultiClient::sendWithClient, this, clientID, dests, pld, encrypted, maxHoldingSeconds);
-    } */
 
     OnMessagePtr_t _send(const vector<string>& dests, shared_ptr<payloads::Payload> pld, bool encrypted, int32_t maxHoldingSeconds) {
         auto cli_lst    = this->GetClients();
@@ -216,10 +188,9 @@ private:
         auto self(shared_from_this());
         for (auto kv=cli_lst->cbegin(); kv!=cli_lst->cend(); kv++) {
             std::thread(
-                [self,succ_ch,onRawReply,onReply](decltype(cli_lst)::obj_t::const_iterator kv, const vector<string>& dests,
+                // [self,succ_ch,onRawReply,onReply](decltype(cli_lst)::obj_t::const_iterator kv, const vector<string>& dests,
+                [self,succ_ch,onRawReply,onReply](int cli_ID, Client_ptr subCli, const vector<string>& dests,
                         shared_ptr<payloads::Payload> pld, bool encrypted, int32_t maxHoldingSeconds){
-                    int cli_ID = kv->first;
-                    Client_ptr subCli = kv->second;
                     auto resp_map = subCli->responseChannels;
 
                     if (!pld->no_reply()) {
@@ -245,7 +216,7 @@ private:
                     }
                     succ_ch->push(make_unique<bool>(true), true);
                 },
-                kv, dests, pld, encrypted, maxHoldingSeconds
+                kv->first, kv->second, dests, pld, encrypted, maxHoldingSeconds
             ).detach();;
         }
 
