@@ -1,11 +1,16 @@
 #include <memory>
 
+#include <pplx/pplxtasks.h>
+
+#include "include/crypto/hex.h"
 #include "ncp/error.h"
 #include "tuna/client.h"
 #include "ncp/session.h"
 
 namespace NKN {
 namespace TUNA {
+
+constexpr size_t TunaSessionClient::NONCESIZE;
 
 TunaSessionClient::TunaSessionClient(AccountPtr_t acc, MClientPtr_t cli, WalletPtr_t wal, ConfigPtr_t cfg)
     : isClosed(false)
@@ -35,8 +40,9 @@ TunaSessionClient::TunaSessionClient(AccountPtr_t acc, MClientPtr_t cli, WalletP
                     continue;
                 }
 
-                for (auto& kv: this->sessionConns->at(sessKey)) {
-                    kv.second->Close();
+                auto map = this->sessionConns->at(sessKey);
+                for (auto it = map->cbegin(); it != map->cend(); it++) {
+                    it->second->Close();
                 }
                 this->sessionConns->erase(sessKey);
                 this->connCount->erase(sessKey);
@@ -68,7 +74,7 @@ shared_ptr<NCP::Session> TunaSessionClient::newSession(const string& remoteAddr,
         }, cfg); */
 }
 
-TunaSessionClient::SessionPtr_t TunaSessionClient::DialWithConfig(const string& remoteAddr, shared_ptr<DialConfig_t> cfg) {
+shared_ptr<NCP::Session_t> TunaSessionClient::DialWithConfig(const string& remoteAddr, shared_ptr<DialConfig_t> cfg) {
     auto dialCfg = DialConfig::MergeDialConfig(config->SessionConfig, cfg);
 
     // TODO set timeout with dialCfg->DialTimeout
@@ -93,16 +99,20 @@ TunaSessionClient::SessionPtr_t TunaSessionClient::DialWithConfig(const string& 
     meta->set_allocated_id(&sessionID);
 
     string sessKey = remoteAddr+sessionID;
-    sessionConns->emplace(sessKey, map<string, shared_ptr<TCPConn_t>>());
+    sessionConns->emplace(sessKey, safe_map<string, shared_ptr<TCPConn_t>>());
     auto& conn_map = (*sessionConns)[sessKey];
 
+    atomic_size_t done_cnt(0);
+    pplx::task_completion_event<size_t> wait_all;
     for (size_t idx=0; idx<addrs->size(); idx++) {
         auto addr = (*addrs)[idx];
         auto conn = make_shared<TCPConn_t>(addr->IP, (uint16_t)addr->Port);
 
-        auto err = conn->Dial(5*1000)
-            .then([conn,this,remoteAddr,meta](const boost_err& err){
-                if (err)    return err;
+        conn->Dial(5*1000)
+            .then([idx,conn,this,meta,&remoteAddr,&conn_map](const boost_err& err){
+                if (err) {
+                    return err;
+                }
 
                 auto sent = conn->Write(this->addr->String());
                 if (sent != this->addr->String().length()) {
@@ -112,39 +122,45 @@ TunaSessionClient::SessionPtr_t TunaSessionClient::DialWithConfig(const string& 
                 // Send pb.SessionMetadata
                 auto nonce  = Uint192::Random<shared_ptr<Uint192>>();
                 auto cipher = this->encode(meta->SerializeAsString(), make_shared<Client::Address_t>(remoteAddr));
-
                 sent = conn->Write(*cipher);
                 if (sent != cipher->size()) {
                     return boost_err(ErrCode::ErrOperationAborted);
                 }
+
+                (*conn_map)[to_string(idx)] = conn;
                 return boost_err(ErrCode::Success);
-            }).get();
-
-        // if err, log err and close conn
-        if (! err) {
-            conn_map[to_string(idx)] = conn;
-        }
+            })
+            .then([idx,&done_cnt,&wait_all,&addrs](const boost_err& err){
+                cerr << "TCPConn[" << idx << "] Dial result: " << err << '\n';
+                done_cnt++;
+                if (done_cnt == addrs->size()) {
+                    wait_all.set(done_cnt.load());
+                }
+            });
     }
+    size_t cnt = pplx::create_task(wait_all).get();
+    assert (cnt == addrs->size());
 
-    if(conn_map.size() == 0) {
+    if(conn_map->size() == 0) {
         // TODO all Dial failed
     }
 
     vector<string> conn_list;
-    for (auto& kv: conn_map) {
-        conn_list.emplace_back(kv.first);
+    for (auto it = conn_map->cbegin(); it != conn_map->cend(); it++) {
+        conn_list.emplace_back(it->first);
     }
 
     auto sess = newSession(remoteAddr, sessionID, conn_list, config->SessionConfig);
     if (sess == nullptr) {
+        cerr << "newSession failed\n";
         return nullptr;
     }
-
     (*sessions)[sessKey] = sess;
-    for (auto& it: conn_map) {
-        if (it.second != nullptr) {
-            int idx = std::stoi(it.first);
-            shared_ptr<TCPConn_t> conn = it.second;
+
+    for (auto it = conn_map->cbegin(); it != conn_map->cend(); it++) {
+        if (it->second != nullptr) {
+            int idx = std::stoi(it->first);
+            shared_ptr<TCPConn_t> conn = it->second;
             std::thread([this,sessKey,idx,conn](){
                 this->handleConn(conn, sessKey, idx);
                 conn->Close();
@@ -152,10 +168,13 @@ TunaSessionClient::SessionPtr_t TunaSessionClient::DialWithConfig(const string& 
         }
     }
 
+    cout << "Try to Session Dial...\n";
     auto err = sess->Dial(/*timeout*/);
     if (err) {
+        cerr << "Session.Dial() failed: " << err << '\n';
         return nullptr;
     }
+    cout << "Session Dial success\n";
     return sess;
 }
 

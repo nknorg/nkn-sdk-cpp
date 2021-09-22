@@ -1,3 +1,4 @@
+#include <chrono>
 #include <memory>
 #include <thread>
 
@@ -198,7 +199,7 @@ boost::system::error_code Session::handleClosePacket() {
     return ErrCode::Success;
 }
 
-boost::system::error_code Session::sendHandshakePacket(/*timeout*/) {
+boost::system::error_code Session::sendHandshakePacket(chrono::milliseconds timeo) {
     auto pktPtr = make_shared<pb::Packet>();
     pktPtr->set_handshake(true);
     for (auto id=localClientIDs.begin(); id != localClientIDs.end(); id++) {
@@ -210,13 +211,13 @@ boost::system::error_code Session::sendHandshakePacket(/*timeout*/) {
     auto raw = make_shared<string>(pktPtr->ByteSizeLong(), 0);
     pktPtr->SerializeToArray((void*)raw->data(), raw->length());
 
+    atomic<uint32_t> err_cnt(0);
     pplx::task_completion_event<boost::system::error_code> send_tce;
-    if (auto cnt = connections->size() > 0) {   // TCP conns not empty, tuna mode
-        atomic<uint32_t> err_cnt(0);
+    if (auto cnt = connections->size() > 0) {
         for (auto it=connections->cbegin(); it!=connections->cend(); it++) {
             ConnectionPtr_t conn = it->second;
             pplx::create_task(
-                std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, raw, conn->RetransmissionTimeout())
+                std::bind(sendWith, tunaCli, conn->localClientID, conn->remoteClientID, raw, timeo)
             ).then([&err_cnt,&send_tce,cnt](const boost::system::error_code& err){
                 if (err) {
                     err_cnt++;
@@ -228,8 +229,25 @@ boost::system::error_code Session::sendHandshakePacket(/*timeout*/) {
                 }
             });
         }
-    } else {    // No TCP conn, multiCli mode
-        // TODO
+    } else {
+        size_t remoteID_cnt = remoteClientIDs.size();
+        auto all = localClientIDs.size();
+        for (size_t idx=0; idx<localClientIDs.size(); idx++) {
+            string localID = localClientIDs[idx];
+            string remoteID = remoteID_cnt > 0 ? remoteClientIDs[idx%remoteID_cnt] : localID;
+            pplx::create_task(
+                std::bind(sendWith, tunaCli, localID, remoteID, raw, timeo)
+            ).then([&err_cnt,&send_tce,all](const boost::system::error_code& err){
+                if (err) {
+                    err_cnt++;
+                    if (err_cnt == all) {
+                        send_tce.set(err);
+                    }
+                } else {
+                    send_tce.set(ErrCode::Success);
+                }
+            });
+        }
     }
 
     // TODO deadline send_tce.set(timeout)
@@ -242,7 +260,7 @@ boost::system::error_code Session::Dial(/*timeout*/) {
         return ErrCode::ErrSessionEstablished;
     }
 
-    auto err = sendHandshakePacket(/*timeout*/);
+    auto err = sendHandshakePacket(chrono::milliseconds(config->InitialRetransmissionTimeout));
     if (err)
         return err;
 
@@ -400,7 +418,7 @@ boost::system::error_code Session::Accept() {
     start();
     isAccepted = true;
 
-    return sendHandshakePacket(/*timeout*/);
+    return sendHandshakePacket(chrono::milliseconds(config->InitialRetransmissionTimeout));
 }
 
 size_t Session::Write(const byteSlice& data) {

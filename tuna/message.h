@@ -71,7 +71,7 @@ typedef struct PubAddrs: public vector<PubAddr_ptr> {
     }
 } PubAddrs_t;
 
-typedef union MsgFrame {
+/* typedef union MsgFrame {
     static constexpr size_t KB   = 1024;
     static constexpr size_t PAGE = 4*KB;
     char*       p;
@@ -103,7 +103,7 @@ typedef union MsgFrame {
 } MsgFrame_t;
 
 constexpr size_t MsgFrame::KB;
-constexpr size_t MsgFrame::PAGE;
+constexpr size_t MsgFrame::PAGE; */
 
 };  // namespace TUNA
 };  // namespace NKN

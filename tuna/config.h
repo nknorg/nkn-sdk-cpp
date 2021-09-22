@@ -51,11 +51,7 @@ struct DialConfig {
     }
 };
 
-const DialConfig_t defaultDialConfig {
-    .DialTimeout = 0,
-    .SessionConfig = nullptr,
-};
-
+extern const DialConfig_t defaultDialConfig;
 extern const NCP::Config_t defaultSessionConfig;
 inline shared_ptr<NCP::Config_t> DefaultSessionConfig();
 
@@ -107,24 +103,8 @@ public:
     }
 };  // struct Config
 
-const Config_t defaultConfig = {
-    .NumTunaListeners = 4,
-    .TunaDialTimeout  = 10*1000,
-    .TunaDownloadGeoDB = false,
-    .TunaMeasureBandwidth = false,
-    .TunaMaxPrice     = "0",
-    .TunaNanoPayFee   = "0",
-    .TunaServiceName  = DefaultReverseServiceName,
-    .TunaGeoDBPath    = "",
-    .TunaSubscriptionPrefix = DefaultSubscriptionPrefix,
-    .TunaMeasureStoragePath = "",
-    // .TunaIPFilter     = nullptr,
-    .SessionConfig    = nullptr,
-};
-
-constexpr NCP::Config_t defaultSessionConfig = {
-    .MTU = 1300,
-};
+extern const Config_t defaultConfig;
+extern const NCP::Config_t defaultSessionConfig;
 
 inline shared_ptr<NCP::Config_t> DefaultSessionConfig() {
     return make_shared<NCP::Config_t>(defaultSessionConfig);

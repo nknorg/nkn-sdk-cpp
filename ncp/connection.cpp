@@ -157,6 +157,7 @@ namespace NKN {
                 }
                 session->updateBytesReadSentTime();
             }
+            return ErrCode::ErrConnClosed;
         }
 
         boost::system::error_code Connection::checkTimeout() {

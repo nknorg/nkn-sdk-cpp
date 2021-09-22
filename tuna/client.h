@@ -50,7 +50,7 @@ public:
     typedef shared_ptr<Config_t>            ConfigPtr_t;
     typedef shared_ptr<Client::MultiClient> MClientPtr_t;
     typedef shared_ptr<NCP::Session_t>      SessionPtr_t;
-    typedef shared_ptr<Wallet::Account_t>   AccountPtr_t;
+    typedef shared_ptr<const Wallet::Account_t>   AccountPtr_t;
     typedef shared_ptr<Wallet::Wallet_t>    WalletPtr_t;
     typedef shared_ptr<Uint256>             Uint256Ptr_t;
     typedef shared_ptr<const Client::Address_t>   AddressPtr_t;
@@ -78,7 +78,7 @@ public:
     // TunaExit    tunaExits;
     // Regexp  acceptAddrs;
     safe_map<string, SessionPtr_t>                    sessions;
-    safe_map<string, map<string, shared_ptr<TCPConn_t>>> sessionConns;
+    safe_map<string, safe_map<string, shared_ptr<TCPConn_t>>> sessionConns;
     safe_map<string, Uint256Ptr_t>                    sharedKeys;
     safe_map<string, int32_t>                         connCount;
     safe_map<string, ptime_t>                         closedSessionKey;  // TODO expired feature
@@ -134,7 +134,6 @@ public:
 
     static constexpr size_t NONCESIZE = 192/8;
 };  // class TunaSessionClient
-constexpr size_t TunaSessionClient::NONCESIZE;
 
 };  // namespace TUNA
 };  // namespace NKN

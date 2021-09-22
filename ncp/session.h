@@ -108,7 +108,7 @@ public:
     boost::system::error_code handleHandshakePacket(shared_ptr<pb::Packet> pkt);
 
     boost::system::error_code sendClosePacket();
-    boost::system::error_code sendHandshakePacket(/*timeout*/);
+    boost::system::error_code sendHandshakePacket(chrono::milliseconds timeo);
 
     boost::system::error_code Dial(/*timeout*/);
     boost::system::error_code Accept();
