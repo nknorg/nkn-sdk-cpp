@@ -5,9 +5,9 @@
 #include <string>
 
 namespace NKN {
-namespace NCP {
-constexpr int32_t MinSequenceID = 1;
-};
+    namespace NCP {
+        constexpr int32_t MinSequenceID = 1;
+    };
 };
 
 inline uint32_t NextSeq(uint32_t seq, int64_t step) {
@@ -21,8 +21,8 @@ inline uint32_t NextSeq(uint32_t seq, int64_t step) {
 
 inline bool SeqInBetween(uint32_t startSeq, uint32_t endSeq, uint32_t targetSeq) {
     return (startSeq <= endSeq)
-        ? (startSeq <= targetSeq && targetSeq < endSeq)  // not turn round
-        : (targetSeq < endSeq || startSeq <= targetSeq);    // turn round
+           ? (startSeq <= targetSeq && targetSeq < endSeq)  // not turn round
+           : (targetSeq < endSeq || startSeq <= targetSeq);    // turn round
 }
 
 // CompareSeq: Comparison of int32_t
@@ -31,12 +31,13 @@ inline int CompareSeq(uint32_t seq1, uint32_t seq2) {
         return 0;
 
     if (seq1 < seq2)
-        return (seq2-seq1 < UINT32_MAX/2) ? -1 : 1;
+        return (seq2 - seq1 < UINT32_MAX / 2) ? -1 : 1;
 
-    return (seq1-seq2 < UINT32_MAX/2) ? 1 : -1;
+    return (seq1 - seq2 < UINT32_MAX / 2) ? 1 : -1;
 }
 
-inline std::string connKey(const std::string& localID, const std::string& remoteID) {
+inline std::string connKey(const std::string &localID, const std::string &remoteID) {
     return localID + " - " + remoteID;
 }
+
 #endif  // __NCP_UTIL_H__

@@ -18,66 +18,75 @@
 using namespace std;
 
 namespace NKN {
-namespace NCP {
+    namespace NCP {
 
-typedef class Session Session_t;
-typedef class Connection Connection_t;
-class Connection {
-    typedef chrono::time_point<chrono::steady_clock> time_point;
-    template<typename K_t, typename V_t>
-    using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
+        typedef class Session Session_t;
+        typedef class Connection Connection_t;
 
-    template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-    using safe_heap = sf::contfree_safe_ptr<priority_queue<T, vector<T>, greater<T>>>;
+        class Connection {
+            typedef chrono::time_point<chrono::steady_clock> time_point;
+            template<typename K_t, typename V_t>
+            using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
 
-    friend class Session;
+            template<typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
+            using safe_heap = sf::contfree_safe_ptr<priority_queue<T, vector<T>, greater<T>>>;
 
-    shared_ptr<Session_t> session;
-    string  localClientID;
-    string  remoteClientID;
-    uint32_t    windowSize;
+            friend class Session;
 
-    Channel<bool> sendWindowUpdate;
-    // TODO RWMutex;
+            shared_ptr<Session_t> session;
+            string localClientID;
+            string remoteClientID;
+            uint32_t windowSize{};
 
-    safe_map<uint32_t, time_point>timeSentSeq;
-    safe_map<uint32_t, bool> resentSeq;
-    safe_heap<uint32_t> sendAckQueue;
+            Channel<bool> sendWindowUpdate;
+            // TODO RWMutex;
 
-    chrono::milliseconds retransmissionTimeout;
+            safe_map<uint32_t, time_point> timeSentSeq;
+            safe_map<uint32_t, bool> resentSeq;
+            safe_heap<uint32_t> sendAckQueue;
 
-public:
-    Connection() = default;
-    // Connection(const Connection_t& conn) = default;
-    // Connection_t& operator=(const Connection_t& conn) = default;
-    Connection(const shared_ptr<Session_t> sess, const string& localCliID, const string& remoteCliID);
+            chrono::milliseconds retransmissionTimeout{};
 
-    static shared_ptr<Connection_t> NewConnection(const shared_ptr<Session_t> sess, const string& localID, const string& remoteID) {
-        return make_shared<Connection_t>(sess, localID, remoteID);
-    }
+        public:
+            Connection() = default;
 
-    inline uint32_t SendWindowUsed() { return timeSentSeq->size(); }
+            // Connection(const Connection_t& conn) = default;
+            // Connection_t& operator=(const Connection_t& conn) = default;
+            Connection(shared_ptr<Session_t> sess, const string &localCliID, const string &remoteCliID);
 
-    inline void SendAck(uint32_t sequenceID) { /* TODO Lock */ sendAckQueue->push(sequenceID); }
-    inline int SendAckQueueLen() { /* TODO Lock */ return int(sendAckQueue->size()); }
-    void ReceiveAck(uint32_t seq, bool isSentByMe);
-    inline chrono::milliseconds& RetransmissionTimeout() { /* TODO Lock*/ return retransmissionTimeout; }
-    boost::system::error_code waitForSendWindow(/*timeout*/);
+            static shared_ptr<Connection_t>
+            NewConnection(const shared_ptr<Session_t>& sess, const string &localID, const string &remoteID) {
+                return make_shared<Connection_t>(sess, localID, remoteID);
+            }
 
-    void Start() {
-        std::thread* thrdTx = new std::thread(std::bind(&Connection::tx, this));
-        std::thread* thrdSendAck = new std::thread(std::bind(&Connection::sendAck, this));
-        std::thread* thrdCheckTimeout= new std::thread(std::bind(&Connection::checkTimeout, this));
+            inline uint32_t SendWindowUsed() { return timeSentSeq->size(); }
 
-        thrdTx->detach();
-        thrdSendAck->detach();
-        thrdCheckTimeout->detach();
-    }
+            inline void SendAck(uint32_t sequenceID) { /* TODO Lock */ sendAckQueue->push(sequenceID); }
 
-    boost::system::error_code tx();
-    boost::system::error_code sendAck();
-    boost::system::error_code checkTimeout();
-};  // class Connection
-};  // namespace NCP
-};  // namespace NKN
+            inline int SendAckQueueLen() { /* TODO Lock */ return int(sendAckQueue->size()); }
+
+            void ReceiveAck(uint32_t seq, bool isSentByMe);
+
+            inline chrono::milliseconds &RetransmissionTimeout() { /* TODO Lock*/ return retransmissionTimeout; }
+
+            boost::system::error_code waitForSendWindow(/*timeout*/);
+
+            void Start() {
+                auto *thrdTx = new std::thread([this] { tx(); });
+                auto *thrdSendAck = new std::thread([this] { sendAck(); });
+                auto *thrdCheckTimeout = new std::thread([this] { checkTimeout(); });
+
+                thrdTx->detach();
+                thrdSendAck->detach();
+                thrdCheckTimeout->detach();
+            }
+
+            boost::system::error_code tx();
+
+            boost::system::error_code sendAck();
+
+            boost::system::error_code checkTimeout();
+        };  // class Connection
+    }  // namespace NCP
+}  // namespace NKN
 #endif  // __NCP_CONNECTION_H__
