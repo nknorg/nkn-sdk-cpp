@@ -369,7 +369,7 @@ namespace NKN {
             boost::asio::deadline_timer t(io);
             auto interval = chrono::milliseconds(config->CheckBytesReadInterval);
 
-            while (true) {
+            while (!IsClosed()) {
                 this_thread::sleep_for(interval);
 
                 // TODO Lock
@@ -414,6 +414,7 @@ namespace NKN {
                     updateBytesReadSentTime();
                 }
             }
+            return ErrCode::ErrSessionClosed;
         }
 
         boost::system::error_code Session::Accept() {
