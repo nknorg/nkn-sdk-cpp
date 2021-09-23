@@ -79,8 +79,6 @@ set(HEADERS
 set(SOURCES
         transaction/transaction.cpp
         transaction/txBuilder.cpp
-        tuna/interface.h
-        tuna/message.h
         wallet/account.cpp
         wallet/nanopay.cpp
         wallet/wallet.cpp
@@ -99,15 +97,14 @@ set(SOURCES
         pb/nodemessage.pb.cc
         pb/sigchain.pb.cc
         pb/transaction.pb.cc
-        pb/sigchain.pb.cc
         )
 
 
-add_library(nkn_sdk_cpp_priv STATIC ${SOURCES})
+add_library(nkn_sdk_cpp_priv SHARED ${SOURCES})
 target_link_libraries(nkn_sdk_cpp_priv
-        /Users/chow/test/c8d172709018780eb069/protobuf/platform/x86_64_ios/lib/libprotobuf.a
-        /Users/chow/test/libsodium-1.0.18/src/libsodium/.libs/libsodium.a
-        /Users/chow/test/gmp-6.1.0-20151019/ios/lib/libgmp.a
-        /Users/chow/test/gmp-6.1.0-20151019/ios/lib/libgmpxx.a
+        /usr/local/Cellar/protobuf/3.17.3/lib/libprotobuf.a
+        /usr/local/opt/libsodium/lib/libsodium.a
+        /usr/local/Cellar/gmp/6.2.1/lib/libgmp.a
+        /usr/local/Cellar/gmp/6.2.1/lib/libgmpxx.a
         /usr/local/Cellar/openssl@1.1/1.1.1h/lib/libcrypto.a
         /usr/local/Cellar/cpprestsdk/2.10.16/lib/libcpprest.dylib)

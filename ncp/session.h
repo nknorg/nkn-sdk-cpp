@@ -144,15 +144,15 @@ namespace NKN {
             boost::system::error_code startCheckBytesRead();
 
             // NKN::Conn_t interface
-            virtual inline string LocalAddr() final { return localAddr; }
+            inline string LocalAddr() final { return localAddr; }
 
-            virtual inline string RemoteAddr() final { return remoteAddr; }
+            inline string RemoteAddr() final { return remoteAddr; }
 
-            virtual size_t Read(byteSlice &, size_t) final;
+            size_t Read(byteSlice &, size_t) final;
 
-            virtual size_t Write(const byteSlice &) final;
+            size_t Write(const byteSlice &) final;
 
-            virtual boost::system::error_code Close() final;
+            boost::system::error_code Close() final;
 
             shared_ptr<Config_t> config;
 
@@ -164,12 +164,12 @@ namespace NKN {
             vector<string> localClientIDs;
             vector<string> remoteClientIDs;
             TUNA::TunaCli_Ptr tunaCli;
-            SendWithFunc sendWith;
+            SendWithFunc sendWith{};
 
-            atomic<uint32_t> sendWindowSize;
-            atomic<uint32_t> recvWindowSize;
-            atomic<uint32_t> sendMtu;
-            atomic<uint32_t> recvMtu;
+            atomic<uint32_t> sendWindowSize{};
+            atomic<uint32_t> recvWindowSize{};
+            atomic<uint32_t> sendMtu{};
+            atomic<uint32_t> recvMtu{};
 
             safe_map<string, ConnectionPtr_t> connections;
             Channel<bool> onAccept;
@@ -178,25 +178,25 @@ namespace NKN {
             Channel<bool> sendWindowUpdate;
             Channel<bool> recvDataUpdate;
 
-            atomic_bool isAccepted;
-            atomic_bool isEstablished;
-            atomic_bool isClosed;
+            atomic_bool isAccepted{};
+            atomic_bool isEstablished{};
+            atomic_bool isClosed{};
 
             // TODO buff Lock
             shared_ptr<byteSlice> sendBuffer;
-            atomic<uint32_t> sendWindowStartSeq;
-            atomic<uint32_t> sendWindowEndSeq;
-            atomic<uint32_t> recvWindowStartSeq;
-            atomic<uint32_t> recvWindowUsed;
+            atomic<uint32_t> sendWindowStartSeq{};
+            atomic<uint32_t> sendWindowEndSeq{};
+            atomic<uint32_t> recvWindowStartSeq{};
+            atomic<uint32_t> recvWindowUsed{};
             safe_map<uint32_t, shared_ptr<string>> sendWindowData;
             safe_map<uint32_t, shared_ptr<string>> recvWindowData;
 
-            atomic<uint64_t> bytesWrite;
-            atomic<uint64_t> bytesRead;
-            atomic<uint64_t> remoteBytesRead;
+            atomic<uint64_t> bytesWrite{};
+            atomic<uint64_t> bytesRead{};
+            atomic<uint64_t> remoteBytesRead{};
 
-            atomic<time_point> bytesReadSentTime;
-            atomic<time_point> bytesReadUpdateTime;
+            atomic<time_point> bytesReadSentTime{};
+            atomic<time_point> bytesReadUpdateTime{};
         };  // class Session
     };  // namespace NCP
 };  // namespace NKN

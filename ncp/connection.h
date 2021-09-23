@@ -52,7 +52,7 @@ namespace NKN {
 
             // Connection(const Connection_t& conn) = default;
             // Connection_t& operator=(const Connection_t& conn) = default;
-            Connection(shared_ptr<Session_t> sess, const string &localCliID, const string &remoteCliID);
+            Connection(const shared_ptr<Session_t>& sess, string localCliID, string remoteCliID);
 
             static shared_ptr<Connection_t>
             NewConnection(const shared_ptr<Session_t>& sess, const string &localID, const string &remoteID) {

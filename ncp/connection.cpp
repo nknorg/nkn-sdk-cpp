@@ -1,8 +1,9 @@
 #include <iostream>
 #include <memory>
-#include <math.h>
+#include <cmath>
 
 #include <boost/asio.hpp>
+#include <utility>
 
 
 #include "pb/packet.pb.h"
@@ -15,8 +16,8 @@ using namespace std;
 
 namespace NKN {
     namespace NCP {
-        Connection::Connection(const shared_ptr<Session_t> sess, const string &localCliID, const string &remoteCliID)
-                : session(sess), localClientID(localCliID), remoteClientID(remoteCliID),
+        Connection::Connection(const shared_ptr<Session_t>& sess, string localCliID, string remoteCliID)
+                : session(sess), localClientID(std::move(localCliID)), remoteClientID(std::move(remoteCliID)),
                   windowSize(sess->config->InitialConnectionWindowSize), sendWindowUpdate(1), timeSentSeq(),
                   resentSeq(), sendAckQueue(),
                   retransmissionTimeout(chrono::milliseconds(sess->config->InitialRetransmissionTimeout)) {}
