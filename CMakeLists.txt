@@ -1,9 +1,37 @@
 cmake_minimum_required(VERSION 3.20)
-project(nkn_sdk_cpp_priv)
+project(nkn_sdk_cpp_priv C CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 set(Boost_USE_MULTITHREADED FALSE)
 set(OPENSSL_ROOT_DIR /usr/local/opt/openssl /usr/local/Cellar/openssl@1.1/1.1.1h/)
+
+find_package(Boost 1.70.0 REQUIRED)
+find_package(OpenSSL 1.1.0 REQUIRED)
+find_package(Protobuf 3.10.0 REQUIRED)
+#find_package(GMP 6.2.0 REQUIRED)
+#find_package(Sodium 1.0.10 REQUIRED)
+
+if (GMP_INCLUDE_DIR AND GMP_LIBRARY_DIR )
+    set(GMP_FOUND TRUE)
+else()
+    find_path(GMP_INCLUDE_DIR
+        NAMES gmp.h
+        PATHS
+        /usr/include
+        /usr/local/include
+        )
+    find_path(GMP_LIBRARY_DIR
+        NAMES "libgmp.so" "libgmp.dylib"
+        PATHS
+        /usr/lib/
+        /usr/local/lib/
+        )
+    find_library(GMP_LIBRARIES NAMES gmp
+        PATHS ENV GMP_LIBRARY_DIR
+        DOC "Path to the GMP library"
+        )
+
+endif()
 
 include_directories(client)
 include_directories(include)
@@ -19,11 +47,11 @@ include_directories(wallet)
 include_directories(thirdparty/cpprestsdk/Release/include)
 include_directories(thirdparty/rapidjson/include)
 include_directories(thirdparty/object_threadsafe)
-include_directories(/usr/local/Cellar/boost/1.74.0/include/)
-include_directories(/usr/local/opt/protobuf/include/)
-include_directories(/usr/local/Cellar/gmp/6.2.1/include)
-include_directories(/usr/local/Cellar/libsodium/1.0.18_1/include)
-include_directories(/usr/local/Cellar/openssl@1.1/1.1.1h/include)
+include_directories(${Boost_INCLUDE_DIR})
+include_directories(${OPENSSL_INCLUDE_DIR})
+include_directories(${Protobuf_INCLUDE_DIR})
+include_directories(${GMP_INCLUDE_DIR})
+#include_directories(/usr/local/Cellar/libsodium/1.0.18_1/include)
 include_directories(.)
 
 
@@ -76,7 +104,8 @@ set(HEADERS
         pb/transaction.pb.h
         transaction/sigchain.h
         )
-set(SOURCES
+
+set(WALLET_SOURCES
         transaction/transaction.cpp
         transaction/txBuilder.cpp
         wallet/account.cpp
@@ -86,9 +115,6 @@ set(SOURCES
         config.cpp
         rpc.cpp
         json/NKNCodec.cpp
-        ncp/connection.cpp
-        ncp/session.cpp
-        ncp/pb/packet.pb.cc
         payloads/gogo.pb.cc
         payloads/payloads.pb.cc
         pb/block.pb.cc
@@ -99,12 +125,44 @@ set(SOURCES
         pb/transaction.pb.cc
         )
 
+set(SDK_SOURCES
+        tuna/config.cpp
+        tuna/client.cpp
+        tuna/pb/session.pb.cc
+        ncp/config.cpp
+        ncp/session.cpp
+        ncp/connection.cpp
+        ncp/pb/packet.pb.cc
+        client/config.cpp
+        client/multiclient.cpp
+        client/client.cpp
+        client/message.cpp
+        )
 
-add_library(nkn_sdk_cpp_priv SHARED ${SOURCES})
-target_link_libraries(nkn_sdk_cpp_priv
-        /usr/local/Cellar/protobuf/3.17.3/lib/libprotobuf.a
-        /usr/local/opt/libsodium/lib/libsodium.a
-        /usr/local/Cellar/gmp/6.2.1/lib/libgmp.a
-        /usr/local/Cellar/gmp/6.2.1/lib/libgmpxx.a
-        /usr/local/Cellar/openssl@1.1/1.1.1h/lib/libcrypto.a
-        /usr/local/Cellar/cpprestsdk/2.10.16/lib/libcpprest.dylib)
+link_directories(
+        ${Boost_LIBRARIES}
+        ${GMP_LIBRARY_DIR}
+        ./thirdparty/cpprestsdk/build.dylib/Binaries
+        ./
+        )
+
+add_library(nkn_wallet SHARED ${WALLET_SOURCES})
+target_link_libraries(nkn_wallet
+        -lprotobuf
+        -lsodium
+        -lgmp
+        -lgmpxx
+        ${OPENSSL_CRYPTO_LIBRARIES}
+        -lcpprest
+        )
+
+add_library(nkn_sdk SHARED ${SDK_SOURCES})
+target_link_libraries(nkn_sdk
+        -lprotobuf
+        -lsodium
+        -lgmp
+        -lgmpxx
+        ${OPENSSL_CRYPTO_LIBRARIES}
+        -lcpprest
+        nkn_wallet
+        )
