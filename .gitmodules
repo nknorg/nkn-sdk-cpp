@@ -10,3 +10,6 @@
 [submodule "thirdparty/object_threadsafe"]
 	path = thirdparty/object_threadsafe
 	url = https://github.com/AlexeyAB/object_threadsafe.git
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = https://github.com/gabime/spdlog.git
