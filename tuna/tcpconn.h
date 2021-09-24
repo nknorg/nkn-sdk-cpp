@@ -27,7 +27,8 @@ public:
     constexpr static size_t MAX_BUFF_SIZE = 4096;
 
     TCPConn(const string& host, uint16_t port)
-        : io_context_()
+        : isStoped_(false)
+        , io_context_()
         , remote_eps_(ip::tcp::resolver(io_context_).resolve(host, to_string(port)))
         , socket_(io_context_)
     {}
@@ -132,49 +133,6 @@ public:
         return n;
     }
 
-    /* size_t Read_async(byteSlice& out) {
-        boost_err ec;
-
-        auto read_body = [&ec](const boost_err& err, size_t n) -> void {
-            if (err) {
-                // log err
-                ec = err;
-            } else {
-                ec = ErrCode::Success;
-            }
-        };
-
-        uint32_t len = 0;
-        async_read(socket_, buffer(&len, sizeof(uint32_t)),
-            [&read_body,&out,&ec,&len,this](const boost_err& err, size_t n){
-                if (err) {
-                    ec = err;
-                    return;
-                }
-                assert(n == sizeof(uint32_t));
-
-                uint32_t cnt = this->u32FromLSB((char*)&len);
-                out.resize(cnt, 0);  // resize out with cnt
-                async_read(socket_, buffer((void*)out.data(), cnt), read_body);
-            }
-        );
-
-        io_context_.restart();
-        io_context_.run_for(std::chrono::milliseconds(3000));
-        if (!io_context_.stopped()) {   // timeout
-            io_context_.stop();
-            if (!ec) {
-                ec = ErrCode::ErrMaxWait;
-            }
-        }
-
-        if (ec) {
-            // log err code
-        }
-
-        return out.length();
-    } */
-
     size_t Write(const byteSlice& data) final {
         boost_err err;
 
@@ -203,48 +161,6 @@ public:
 
         return n;
     }
-
-    /* size_t Write_async(const byteSlice& data) {
-        boost_err ec;
-        size_t cnt = 0;
-
-        auto write_body = [&ec,&cnt](const boost_err& err, size_t n){
-            cnt = n;
-            if (err) {
-                ec = err;
-            } else {
-                ec = ErrCode::Success;
-            }
-        };
-
-        uint32_t len = u32ToLSB(data.length());
-        async_write(socket_, buffer(&len, sizeof(uint32_t)),
-            [&write_body,&ec,&data,this](const boost_err& err, size_t n){
-                if (err) {
-                    ec = err;
-                    return;
-                }
-                assert(n == sizeof(uint32_t));
-
-                async_write(this->socket_, buffer(data.data(), data.length()), write_body);
-            }
-        );
-
-        io_context_.restart();
-        io_context_.run_for(std::chrono::milliseconds(3000));
-        if (!io_context_.stopped()) {   // timeout
-            io_context_.stop();
-            if (!ec) {
-                ec = ErrCode::ErrMaxWait;
-            }
-        }
-
-        if (ec) {
-            // log err code
-        }
-
-        return cnt;
-    } */
 
     inline uint32_t u32FromLSB(char* p) {
         return uint32_t(p[0] | p[1]<<8 | p[2]<<16 | p[3]<<24);

@@ -31,7 +31,7 @@ namespace NKN {
                   sendMtu(config->MTU), recvMtu(config->MTU),
                   resendChan(nullptr), isAccepted(false),
                   isEstablished(false),
-                  isClosed(true),
+                  isClosed(false),
                   sendBuffer(nullptr),
                   sendWindowStartSeq(MinSequenceID),
                   sendWindowEndSeq(MinSequenceID),
@@ -223,10 +223,11 @@ namespace NKN {
 
             atomic<uint32_t> err_cnt(0);
             pplx::task_completion_event<boost::system::error_code> send_tce;
+            vector<pplx::task<boost::system::error_code>> thrd_grp;
             if (auto cnt = connections->size() > 0) {
                 for (auto it = connections->cbegin(); it != connections->cend(); it++) {
                     ConnectionPtr_t conn = it->second;
-                    pplx::create_task(
+                    thrd_grp.emplace_back(pplx::create_task(
                             std::bind(sendWith, tunaCli, conn->localClientID, conn->remoteClientID, raw, timeo)
                     ).then([&err_cnt, &send_tce, cnt](const boost::system::error_code &err) {
                         if (err) {
@@ -237,7 +238,8 @@ namespace NKN {
                         } else {
                             send_tce.set(ErrCode::Success);
                         }
-                    });
+                        return err;
+                    }));
                 }
             } else {
                 size_t remoteID_cnt = remoteClientIDs.size();
@@ -245,7 +247,7 @@ namespace NKN {
                 for (size_t idx = 0; idx < localClientIDs.size(); idx++) {
                     string localID = localClientIDs[idx];
                     string remoteID = remoteID_cnt > 0 ? remoteClientIDs[idx % remoteID_cnt] : localID;
-                    pplx::create_task(
+                    thrd_grp.emplace_back(pplx::create_task(
                             std::bind(sendWith, tunaCli, localID, remoteID, raw, timeo)
                     ).then([&err_cnt, &send_tce, all](const boost::system::error_code &err) {
                         if (err) {
@@ -256,10 +258,14 @@ namespace NKN {
                         } else {
                             send_tce.set(ErrCode::Success);
                         }
-                    });
+                        return err;
+                    }));
                 }
             }
 
+            for (auto& tsk: thrd_grp) {
+                tsk.get();
+            }
             // TODO deadline send_tce.set(timeout)
             return pplx::create_task(send_tce).get();
         }
@@ -270,6 +276,7 @@ namespace NKN {
                 return ErrCode::ErrSessionEstablished;
             }
 
+            isClosed = false;
             auto err = sendHandshakePacket(chrono::milliseconds(config->InitialRetransmissionTimeout));
             if (err)
                 return err;

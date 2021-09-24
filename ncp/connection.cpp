@@ -171,6 +171,10 @@ namespace NKN {
                 t.expires_from_now(interval, ec);
                 t.wait(ec);
 
+                if (session->IsClosed()) {
+                    return ErrCode::ErrSessionClosed;
+                }
+
                 time_point threshold = chrono::steady_clock::now() - retransmissionTimeout;
                 // TODO Lock
                 for (auto it = timeSentSeq->begin(); it != timeSentSeq->end(); it++) {
