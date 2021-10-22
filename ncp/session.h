@@ -2,6 +2,7 @@
 #define __NCP_SESSION_H__
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <string>
@@ -11,12 +12,13 @@
 
 #include <boost/system/error_code.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include <safe_ptr.h>
 
 #include "channel.h"
 #include "byteslice.h"
 #include "interface.h"
-#include "client.h"
 #include "config.h"
 #include "pb/packet.pb.h"
 
@@ -28,7 +30,7 @@ namespace NKN {
     namespace NCP {
         using namespace std;
 
-/****** Session ******/
+        /****** Session ******/
         typedef class Connection Connection_t;
         typedef class Session Session_t;
 
@@ -38,24 +40,27 @@ namespace NKN {
 
             typedef chrono::time_point<chrono::steady_clock> time_point;
 
-            typedef boost::system::error_code (*SendWithFunc)(const TUNA::TunaCli_Ptr tuna, const string &localID,
-                                                              const string &remoteID,
-                                                              shared_ptr<string> buf,
-                                                              const chrono::milliseconds &writeTimeout);
+            using SendWithFunc = std::function<
+                boost::system::error_code(
+                        const string&, const string&,
+                        shared_ptr<string>, const chrono::milliseconds&
+                )>;
 
             typedef shared_ptr<Connection_t> ConnectionPtr_t;
             template<typename K_t, typename V_t>
             using safe_map = sf::contfree_safe_ptr<unordered_map<K_t, V_t>>;
 
             Session() = default;
-
             Session(const Session_t &sess) = delete;
+            Session& operator=(const Session_t &sess) = delete;
 
-            Session_t &operator=(const Session_t &sess) = delete;
-
-            Session(string localAddr, string remoteAddr,
+            Session(const string& localAddr, const string& remoteAddr,
                     const vector<string> &localCliIDs, const vector<string> &remoteCliIDs,
                     TUNA::TunaCli_Ptr tuna, SendWithFunc fn, shared_ptr<Config_t> cfg = nullptr);
+
+            ~Session(){
+                spdlog::info("::~Session[{},{}] destructed", (void*)this, RemoteAddr());
+            }
 
             static inline shared_ptr<Session_t> NewSession(
                     const string &localAddr, const string &remoteAddr,
@@ -65,9 +70,7 @@ namespace NKN {
             }
 
             inline bool IsStream() { return !config->NonStream; }
-
             inline bool IsEstablished() { /* TODO Lock */ return isEstablished.load(); }
-
             inline bool IsClosed() { /* TODO Lock */ return isClosed.load(); }
 
             inline shared_ptr<string> GetDataToSend(uint32_t seq) { return (*sendWindowData)[seq]; }
@@ -79,9 +82,7 @@ namespace NKN {
             inline uint32_t GetConnWindowSize();
 
             inline uint64_t GetBytesRead() { /* TODO Lock */ return bytesRead.load(); }
-
             inline uint32_t RecvWindowUsed() { /* TODO Lock */ return recvWindowUsed.load(); }
-
             inline uint32_t SendWindowUsed() {
                 /* TODO Lock */
                 uint64_t wb = bytesWrite.load(), rb = remoteBytesRead.load();
@@ -117,41 +118,28 @@ namespace NKN {
             boost::system::error_code
             ReceiveWith(const string &localID, const string &remoteID, const shared_ptr<string>& buf);
 
-            uint32_t waitForSendWindow(uint32_t n);
-
-            boost::system::error_code handleACKPkt(const shared_ptr<pb::Packet>& pkt);
-
-            boost::system::error_code handleSeqPkt(const shared_ptr<pb::Packet>& pkt);
-
+            boost::system::error_code handleACKPkt(const string&, const string&, const shared_ptr<pb::Packet>&);
+            boost::system::error_code handleSeqPkt(const string&, const string&, const shared_ptr<pb::Packet>&);
             boost::system::error_code handleClosePacket();
-
             boost::system::error_code handleHandshakePacket(const shared_ptr<pb::Packet>& pkt);
-
             boost::system::error_code sendClosePacket();
-
             boost::system::error_code sendHandshakePacket(chrono::milliseconds timeo);
 
             boost::system::error_code Dial(/*timeout*/);
-
             boost::system::error_code Accept();
 
             void start();
-
             void startFlush(uint32_t interval);
 
+            uint32_t waitForSendWindow(uint32_t n);
             boost::system::error_code flushSendBuffer();
-
             boost::system::error_code startCheckBytesRead();
 
             // NKN::Conn_t interface
             inline string LocalAddr() final { return localAddr; }
-
             inline string RemoteAddr() final { return remoteAddr; }
-
             size_t Read(byteSlice &, size_t) final;
-
             size_t Write(const byteSlice &) final;
-
             boost::system::error_code Close() final;
 
             shared_ptr<Config_t> config;

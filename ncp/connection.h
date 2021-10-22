@@ -69,7 +69,7 @@ namespace NKN {
 
             inline chrono::milliseconds &RetransmissionTimeout() { /* TODO Lock*/ return retransmissionTimeout; }
 
-            boost::system::error_code waitForSendWindow(/*timeout*/);
+            boost::system::error_code waitForSendWindow(const chrono::milliseconds& timeo);
 
             void Start() {
                 auto *thrdTx = new std::thread([this] { tx(); });

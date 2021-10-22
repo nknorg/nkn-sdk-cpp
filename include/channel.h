@@ -7,6 +7,8 @@
 #include <condition_variable>
 #include <chrono>
 
+#include <spdlog/spdlog.h>
+
 using namespace std;
 
 namespace NKN {
@@ -27,32 +29,34 @@ namespace NKN {
     public:
         Channel(size_t size=1): capacity(size) {}
         ~Channel() {
+            // spdlog::info("Channel<{}>.destructor():{} this[{}]", typeid(ANY).name(), __LINE__, (void *)this);
             unique_lock<decltype(_mutex)> lock(_mutex);
             if (!_queue.empty()) {
-                fprintf(stderr, "Warning: Channel[%p]<%s> was destructed but buffer still have %lu elements. Data will be lost!\n",
-                        this, typeid(ANY).name(), _queue.size());
+                spdlog::warn("Channel[{}]<{}> was destructed but buffer still have {} elements. Data will be lost!",
+                        (void*)this, typeid(ANY).name(), _queue.size());
                 if (!cond_v.wait_for(lock, millisecond(100), [this]{return _queue.empty();})) {
-                    fprintf(stderr, "Warning: wait 100ms but the Channel[%p]<%s> still have %lu elements. Discarded it!\n",
-                        this, typeid(ANY).name(), _queue.size());
+                    spdlog::warn("wait 100ms but the Channel[%p]<%s> still have %lu elements. Discarded it!",
+                            (void*)this, typeid(ANY).name(), _queue.size());
                 }
             }
         }
 
         bool push(unique_ptr<ANY> elem, bool nonblock=false, millisecond timeout=millisecond(0)) {
+            // spdlog::info("Channel<{}>.push():{} this[{}]", typeid(ANY).name(), __LINE__, (void*)this);
             // timeout 0 as infinity
             auto deadline = timeout.count()==0 ? time_point<steady_clock>::max() : steady_clock::now() + timeout;
             unique_lock<decltype(_mutex)> lock(_mutex);
             if (_queue.size() >= capacity) {
-                fprintf(stderr, "Warning: Channel[%p]<%s> full\n", this, typeid(ANY).name());
+                spdlog::warn("Channel[{}]<{}> full", (void*)this, typeid(ANY).name());
                 if (nonblock)
                     return false;
 
                 bool cond_succ = cond_v.wait_until(lock, deadline, [this]{return _queue.size() < capacity;});
                 if (!cond_succ) {
                     if (steady_clock::now() < deadline){    // shoule not happen
-                        fprintf(stderr, "Error: Channel[%p]<%s> occurred spurious wakeup. unreached deadline yet\n", this, typeid(ANY).name());
+                        spdlog::error("Channel[{}]<{}> occurred spurious wakeup. unreached deadline yet", (void*)this, typeid(ANY).name());
                     } else {
-                        fprintf(stderr, "Warning: Channel[%p]<%s> still full after timeout\n", this, typeid(ANY).name());
+                        spdlog::warn("Channel[{}]<{}> still full after timeout", (void*)this, typeid(ANY).name());
                     }
                     return false;
                 }
@@ -63,18 +67,18 @@ namespace NKN {
         }
 
         unique_ptr<ANY> pop (bool nonblock=false, millisecond timeout=millisecond(0)) {
+            // spdlog::info("Channel<{}>.pop({}):{} this[{}] with timeo [{}]", typeid(ANY).name(), nonblock, __LINE__, (void*)this, timeout.count());
             // timeout 0 as infinity
             auto deadline = timeout.count()==0 ? time_point<steady_clock>::max() : steady_clock::now() + timeout;
             unique_lock<decltype(_mutex)> lock(_mutex);
             if (_queue.empty()) {
-                // fprintf(stderr, "Warning: Channel[%p]<%s> empty\n", this, typeid(ANY).name());
                 if (nonblock)
                     return nullptr;
 
                 bool cond_succ = cond_v.wait_until(lock, deadline, [this]{return !_queue.empty();});
                 if (!cond_succ) {
                     if (steady_clock::now() < deadline){    // shoule not happen
-                        fprintf(stderr, "Error: Channel[%p]<%s> occurred spurious wakeup. unreached deadline deadline yet\n", this, typeid(ANY).name());
+                        spdlog::error("Channel[{}]<{}> occurred spurious wakeup. unreached deadline deadline yet", (void*)this, typeid(ANY).name());
                     } else {
                         // fprintf(stderr, "Warning: Channel[%p]<%s> still empty after timeout\n", this, typeid(ANY).name());
                     }
@@ -82,10 +86,9 @@ namespace NKN {
                 }
             }
             auto ret = std::move(_queue.front());
-            // fprintf(stderr, "Channel[%p]<%s> pop an elem %p\n", this, typeid(ANY).name(), ret.get());
             _queue.pop();
             cond_v.notify_all();
-            // fprintf(stderr, "Channel[%p]<%s> pop an elem %p\n", this, typeid(ANY).name(), ret.get());
+            // spdlog::info("Channel[{}]<{}> pop an elem {}", (void*)this, typeid(ANY).name(), *ret);
             return ret;
         }
 

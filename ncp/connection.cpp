@@ -1,10 +1,12 @@
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <cmath>
 
 #include <boost/asio.hpp>
-#include <utility>
+#include <thread>
 
+#include <spdlog/spdlog.h>
 
 #include "pb/packet.pb.h"
 #include "error.h"
@@ -47,7 +49,7 @@ namespace NKN {
             timeSentSeq->erase(seq);
             resentSeq->erase(seq);
 
-            sendWindowUpdate.push(make_unique<bool>(true));
+            sendWindowUpdate.push(make_unique<bool>(true), true);
         }
 
         boost::system::error_code Connection::tx() {
@@ -57,15 +59,20 @@ namespace NKN {
             while (true) {
                 if (seq == 0) {
                     seq = session->getResendSeq();
+                    // spdlog::info("Connection[{}-{}]::tx():{} getResendSeq == {}", localClientID, remoteClientID, __LINE__, seq);
                 }
 
                 if (seq == 0) {
-                    ec = waitForSendWindow(/*timeout*/);
+                    ec = waitForSendWindow(chrono::milliseconds(1000));
+                    // spdlog::info("Connection[{}-{}]::tx():{} waitForSendWindow got err: {}:{}",
+                            // localClientID, remoteClientID, __LINE__, ec.message(), ec.value());
                     if (ec == ErrCode::ErrMaxWait)
                         continue;
-                    if (ec)
+                    if (ec) {
                         return ec;
+                    }
                     seq = session->getSendSeq();
+                    spdlog::info("Connection[{}-{}]::tx():{} getSendSeq == {}", localClientID, remoteClientID, __LINE__, seq);
                 }
 
                 auto data = session->GetDataToSend(seq);
@@ -73,11 +80,14 @@ namespace NKN {
                     // TODO Lock
                     timeSentSeq->erase(seq);
                     resentSeq->erase(seq);
+                    spdlog::info("Connection[{}-{}]::tx():{} GetDataToSend got 0 data with seq:{}", localClientID, remoteClientID, __LINE__, seq);
                     continue;
                 }
 
-                ec = session->sendWith(session->tunaCli, localClientID, remoteClientID, data, retransmissionTimeout);
+                ec = session->sendWith(localClientID, remoteClientID, data, retransmissionTimeout);
                 if (ec) {
+                    spdlog::info("Connection[{}-{}]::tx():{} sendWith got err {}:{}",
+                            localClientID, remoteClientID, __LINE__, ec.message(), ec.value());
                     if (session->IsClosed())
                         return ErrCode::ErrSessionClosed;
                     if (ec == ErrCode::ErrConnClosed)
@@ -96,6 +106,8 @@ namespace NKN {
                 resentSeq->erase(seq);
                 // TODO UnLock
                 seq = 0;
+
+                // spdlog::info("Connection[{}-{}]::tx():{} reached loop ending", localClientID, remoteClientID, __LINE__);
             }
         }
 
@@ -109,9 +121,13 @@ namespace NKN {
                 t.expires_from_now(interval, ec);
                 t.wait(ec);
 
+                // spdlog::info("sendAck({}-{}):{} SendAckQueueLen:{}",
+                        // localClientID, remoteClientID, __LINE__, SendAckQueueLen());
                 if (SendAckQueueLen() == 0) {
+                    interval = boost::posix_time::milliseconds(1000);
                     continue;
                 }
+                interval = boost::posix_time::milliseconds(session->config->SendAckInterval);
 
                 vector<uint32_t> ackStartSeqList;
                 vector<uint32_t> ackSeqCountList;
@@ -129,6 +145,9 @@ namespace NKN {
 
                     ackStartSeqList.push_back(ackStartSeq);
                     ackSeqCountList.push_back(ackSeqCount);
+
+                    spdlog::info("sendAck({}-{}):{} ackStartSeq:{} ackSeqCount:{}",
+                            localClientID, remoteClientID, __LINE__, ackStartSeq, ackSeqCount);
                 }
                 // TODO UnLock
 
@@ -147,8 +166,10 @@ namespace NKN {
                 auto raw = make_shared<string>(pktPtr->ByteSizeLong(), 0);
                 pktPtr->SerializeToArray((void *) raw->data(), raw->length());
 
-                auto err = session->sendWith(session->tunaCli, localClientID, remoteClientID, raw,
+                auto err = session->sendWith(localClientID, remoteClientID, raw,
                                              retransmissionTimeout);
+                spdlog::info("sendAck({}-{}):{} sendWith result {}:{}",
+                        localClientID, remoteClientID, __LINE__, err.message(), err.value());
                 if (err) {
                     if (err == ErrCode::ErrConnClosed) {
                         return err;
@@ -158,6 +179,7 @@ namespace NKN {
                 }
                 session->updateBytesReadSentTime();
             }
+            spdlog::warn("sendAck({}-{}):{} thread terminal", localClientID, remoteClientID, __LINE__);
             return ErrCode::ErrConnClosed;
         }
 
@@ -190,10 +212,17 @@ namespace NKN {
             return ErrCode::Success;
         }
 
-        boost::system::error_code Connection::waitForSendWindow(/*timeout*/) {
-            auto ret = sendWindowUpdate.pop(true, chrono::milliseconds(1000));
-            if (ret == nullptr) {   // timeout
-                return ErrCode::ErrMaxWait;
+        boost::system::error_code Connection::waitForSendWindow(const chrono::milliseconds& timeo) {
+            if (SendWindowUsed() >= this->windowSize) {
+                auto ret = sendWindowUpdate.pop(false, timeo);
+                if (ret == nullptr) {   // timeout
+                    return ErrCode::ErrMaxWait;
+                }
+
+                if (this->session->IsClosed()) {
+                    return ErrCode::ErrSessionClosed;
+                }
+                // this_thread::sleep_for(milliseconds(100));
             }
             return ErrCode::Success;
         }

@@ -2,6 +2,7 @@
 #include <memory>
 #include <thread>
 
+#include <spdlog/spdlog.h>
 #include <boost/asio.hpp>
 #include <utility>
 #include <pplx/pplxtasks.h>
@@ -16,7 +17,7 @@ namespace NKN {
     namespace NCP {
         using namespace std;
 
-        Session::Session(string localAddr, string remoteAddr,
+        Session::Session(const string& localAddr, const string& remoteAddr,
                          const vector<string> &localCliIDs, const vector<string> &remoteCliIDs,
                          TUNA::TunaCli_Ptr tuna, SendWithFunc fn, shared_ptr<Config_t> cfg)
                 : config(Config::MergeDefaultConfig(std::move(cfg))),
@@ -29,6 +30,8 @@ namespace NKN {
                   sendWindowSize(config->SessionWindowSize),
                   recvWindowSize(config->SessionWindowSize),
                   sendMtu(config->MTU), recvMtu(config->MTU),
+                  onAccept(1),
+                  sendChan(1),
                   resendChan(nullptr), isAccepted(false),
                   isEstablished(false),
                   isClosed(false),
@@ -56,6 +59,8 @@ namespace NKN {
 
         boost::system::error_code
         Session::ReceiveWith(const string &localID, const string &remoteID, const shared_ptr<string> &buf) {
+            // spdlog::error("Session::ReceiveWith received buff from Conn[{}-{}]", localID, remoteID);
+            // cerr << "Session::ReceiveWith received buff from Conn[" << localID << ":" << remoteID << "]\n";
             if (IsClosed()) {
                 return ErrCode::ErrConnClosed;
             }
@@ -79,51 +84,108 @@ namespace NKN {
 
             // is ACK packet
             if (isEst && (ack_start_seq_len > 0 || ack_seq_count_len > 0)) {
-                auto err = handleACKPkt(pktPtr);
+                spdlog::info("Session::ReceiveWith received ACK[{}, {}] packet from Conn[{}-{}]",
+                        ack_start_seq_len, ack_seq_count_len, localID, remoteID);
+                auto err = handleACKPkt(localID, remoteID, pktPtr);
                 if (err)
                     return err;
             }
 
             // is BytesRead packet
             if (isEst && pktPtr->bytes_read() > remoteBytesRead) {
+                spdlog::info("Session::ReceiveWith received BytesRead[{}] packet from Conn[{}-{}]",
+                        pktPtr->bytes_read(), localID, remoteID);
                 remoteBytesRead = pktPtr->bytes_read();
                 sendWindowUpdate.push(make_unique<bool>(true), true);
             }
 
             // is seq packet
             if (isEst && pktPtr->sequence_id() > 0) {
-                auto err = handleSeqPkt(pktPtr);
+                spdlog::info("Session::ReceiveWith received Seq[{}] packet from Conn[{}-{}]",
+                        pktPtr->sequence_id(), localID, remoteID);
+                auto err = handleSeqPkt(localID, remoteID, pktPtr);
                 if (err)
                     return err;
             }
 
+            // spdlog::info("Session::ReceiveWith reached Ending");
             return ErrCode::Success;
         }
 
-        boost::system::error_code Session::handleACKPkt(const shared_ptr<pb::Packet> &pkt) {
+        boost::system::error_code Session::handleACKPkt(
+                const string& localID, const string& remoteID, const shared_ptr<pb::Packet> &pkt) {
             auto ack_start_seq_len = pkt->ack_start_seq_size();
             auto ack_seq_count_len = pkt->ack_seq_count_size();
 
             if (ack_start_seq_len > 0 && ack_seq_count_len > 0 && ack_start_seq_len != ack_seq_count_len) {
                 return ErrCode::ErrInvalidPacket;
             }
-            // TODO
+
+            /* uint32_t count = 0;
+            if (ack_start_seq_len > 0)
+                count = ack_start_seq_len;
+            if (ack_seq_count_len > 0)
+                count = ack_seq_count_len; */
+            uint32_t count = ack_seq_count_len>0 ? ack_seq_count_len
+                                                : ack_start_seq_len>0 ? ack_start_seq_len
+                                                : 0;
+
+            uint32_t ackStartSeq=0, ackEndSeq=0;
+            for (uint32_t i=0; i<count; i++) {
+                /* if (ack_start_seq_len > 0)
+                    ackStartSeq = pkt->ack_start_seq(i);
+                else
+                    ackStartSeq = MinSequenceID;
+
+                if (ack_seq_count_len > 0)
+                    ackEndSeq = NextSeq(ackStartSeq, pkt->ack_seq_count(i));
+                else
+                    ackEndSeq = NextSeq(ackStartSeq, 1); */
+
+                ackStartSeq = ack_start_seq_len>0 ? pkt->ack_start_seq(i) : MinSequenceID;
+                ackEndSeq = NextSeq(ackStartSeq, ack_seq_count_len>0 ? pkt->ack_seq_count(i) : 1);
+
+                if (SeqInBetween(sendWindowStartSeq, sendWindowEndSeq, NextSeq(ackEndSeq, -1))) {
+                    if (!SeqInBetween(sendWindowStartSeq, sendWindowEndSeq, ackStartSeq)) {
+                        ackStartSeq = sendWindowStartSeq;
+                    }
+                    for (uint32_t seq=ackStartSeq; SeqInBetween(ackStartSeq, ackEndSeq, seq); seq=NextSeq(seq, 1)) {
+                        for (auto it=connections->cbegin(); it != connections->cend(); it++) {
+                            it->second->ReceiveAck(seq, it->first == connKey(localID, remoteID));
+                        }
+                        sendWindowData->erase(seq);
+                    }
+                    if (ackStartSeq == sendWindowStartSeq) {
+                        while (sendWindowStartSeq != sendWindowEndSeq) {
+                            sendWindowStartSeq = NextSeq(sendWindowStartSeq, 1);
+                            if (sendWindowData->count(sendWindowStartSeq)) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             return ErrCode::Success;
         }
 
-        boost::system::error_code Session::handleSeqPkt(const shared_ptr<pb::Packet> &pkt) {
+        boost::system::error_code Session::handleSeqPkt(
+                const string& localID, const string& remoteID, const shared_ptr<pb::Packet> &pkt) {
             const string &data = pkt->data();
             if (data.length() > recvMtu) {
+                spdlog::info("Session::handleSeqPkt() invalid data len {}", data.length());
                 return ErrCode::ErrDataSizeTooLarge;
             }
 
             uint32_t seq = pkt->sequence_id();
+            spdlog::info("Session::handleSeqPkt({}), recvWinStart: {}", seq, recvWindowStartSeq);
             if (CompareSeq(seq, recvWindowStartSeq) >= 0) {
                 if (recvWindowData->count(seq) == 0) {  // not received seq yet
                     if (recvWindowUsed + data.length() > recvWindowSize) {
                         return ErrCode::ErrRecvWindowFull;
                     }
 
+                    spdlog::info("Session::handleSeqPkt({}) update recv data & {} bytes WindowUsed", seq, data.length());
                     (*recvWindowData)[seq] = make_shared<string>(data);
                     recvWindowUsed += (uint32_t) data.length();
 
@@ -133,10 +195,18 @@ namespace NKN {
                 }
             }
 
+            auto key = connKey(localID, remoteID);
+            if (connections->count(key) > 0) {
+                (*connections)[key]->SendAck(seq);
+            }
+
+            // spdlog::info("Session::handleSeqPkt({}) reached success Ending", seq);
             return ErrCode::Success;
         }
 
         boost::system::error_code Session::handleHandshakePacket(const shared_ptr<pb::Packet> &pkt) {
+            spdlog::error("Session::handleHandshakePacket received a handshake packet");
+            // cerr << "Session::handleHandshakePacket received a handshake packet\n";
             if (isEstablished) {
                 return ErrCode::Success;
             }
@@ -150,6 +220,7 @@ namespace NKN {
 
             size_t conn_cnt = std::min((size_t) pkt->client_ids_size(), localClientIDs.size());
 
+            remoteClientIDs.resize(conn_cnt);
             for (size_t i = 0; i < conn_cnt; i++) {
                 auto conn_ptr = Connection::NewConnection(shared_from_this(), localClientIDs[i], pkt->client_ids(i));
                 if (conn_ptr) {
@@ -185,7 +256,7 @@ namespace NKN {
             for (auto it = connections->cbegin(); it != connections->cend(); it++) {
                 ConnectionPtr_t conn = it->second;
                 pplx::create_task(
-                        std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, serialized,
+                        std::bind(this->sendWith, conn->localClientID, conn->remoteClientID, serialized,
                                   conn->RetransmissionTimeout())
                 ).then([&err_cnt, &send_tce, cnt](const boost::system::error_code &err) {
                     if (err) {
@@ -204,6 +275,7 @@ namespace NKN {
         }
 
         boost::system::error_code Session::handleClosePacket() {
+            spdlog::error("{}:{} Recv a close Packet", __PRETTY_FUNCTION__, __LINE__);
             isClosed.store(true);
             // TODO Wait join threads
             return ErrCode::Success;
@@ -228,7 +300,7 @@ namespace NKN {
                 for (auto it = connections->cbegin(); it != connections->cend(); it++) {
                     ConnectionPtr_t conn = it->second;
                     thrd_grp.emplace_back(pplx::create_task(
-                            std::bind(sendWith, tunaCli, conn->localClientID, conn->remoteClientID, raw, timeo)
+                            std::bind(sendWith, conn->localClientID, conn->remoteClientID, raw, timeo)
                     ).then([&err_cnt, &send_tce, cnt](const boost::system::error_code &err) {
                         if (err) {
                             err_cnt++;
@@ -248,8 +320,10 @@ namespace NKN {
                     string localID = localClientIDs[idx];
                     string remoteID = remoteID_cnt > 0 ? remoteClientIDs[idx % remoteID_cnt] : localID;
                     thrd_grp.emplace_back(pplx::create_task(
-                            std::bind(sendWith, tunaCli, localID, remoteID, raw, timeo)
-                    ).then([&err_cnt, &send_tce, all](const boost::system::error_code &err) {
+                            std::bind(sendWith, localID, remoteID, raw, timeo)
+                    ).then([&err_cnt, &send_tce, all, localID, remoteID](const boost::system::error_code &err) {
+                        spdlog::error("****** sendHandshakePacket {}-{} result: {}:{}\n", localID, remoteID, err.message(), err.value());
+                        // cerr << "****** sendHandshakePacket " << localID << " to " << remoteID << " result: " << err.message() << ":" << err.value() << endl;
                         if (err) {
                             err_cnt++;
                             if (err_cnt == all) {
@@ -275,13 +349,13 @@ namespace NKN {
             if (isAccepted) {
                 return ErrCode::ErrSessionEstablished;
             }
-
             isClosed = false;
+
             auto err = sendHandshakePacket(chrono::milliseconds(config->InitialRetransmissionTimeout));
             if (err)
                 return err;
 
-            auto accepted = onAccept.pop(/*timeout*/);
+            auto accepted = onAccept.pop(false, milliseconds(10000)/*timeout*/);
             if (accepted == nullptr) {  // timeout
                 return ErrCode::ErrMaxWait;
             }
@@ -292,17 +366,21 @@ namespace NKN {
         }
 
         uint32_t Session::waitForSendWindow(uint32_t n) {
+            // spdlog::info("waitForSendWindow({}):{} current winUsed:{}, sess state: {}", n, __LINE__, SendWindowUsed(), IsClosed()?"closed":"opening");
             while (SendWindowUsed() + n > sendWindowSize) { // check until SendWindowUsed()+n < sendWindowSize
-                auto c = sendWindowUpdate.pop(true, chrono::milliseconds(1000));
+                auto c = sendWindowUpdate.pop(false, chrono::milliseconds(1000));
                 if (IsClosed()) {
                     return 0;
                 }
             }
+            // spdlog::info("waitForSendWindow({}):{} return {} - {}", n, __LINE__, sendWindowSize, SendWindowUsed());
             return sendWindowSize - SendWindowUsed();
         }
 
         boost::system::error_code Session::flushSendBuffer() {
             // TODO Lock
+            // spdlog::info("flushSendBuffer():{} {} bytes from buff[{}]", __LINE__, sendBuffer->length(), (void*)sendBuffer.get());
+
             if (sendBuffer->length() <= 0) {
                 return ErrCode::Success;
             }
@@ -317,7 +395,7 @@ namespace NKN {
             // construct a pb::Packet obj with old buf
             auto pktPtr = make_shared<pb::Packet>();
             pktPtr->set_sequence_id(seq);
-            pktPtr->set_allocated_data(buf.get());
+            pktPtr->set_data(*buf);
 
             // Serialized pb obj to a shared_ptr<string>
             auto serialized = make_shared<string>(pktPtr->ByteSizeLong(), 0);
@@ -331,11 +409,14 @@ namespace NKN {
                 auto ok = sendChan.push(make_unique<uint32_t>(seq), false, chrono::milliseconds(1000));
                 if (ok) {
                     break;
+                }else{
+                    spdlog::warn("{}:{} push seq:{} to sendChan timeout", __FILE__, __LINE__, seq);
                 }
 
                 if (IsClosed())
                     return ErrCode::ErrSessionClosed;
             }
+            spdlog::info("{}:{} push seq:{} to sendChan success", __FILE__, __LINE__, seq);
             return ErrCode::Success;
         }
 
@@ -350,8 +431,7 @@ namespace NKN {
 
                 auto err = flushSendBuffer();
                 if (err) {
-                    fprintf(stderr, "%s:%d met error: ", __PRETTY_FUNCTION__, __LINE__);
-                    cerr << err.message() << ":" << err.value() << '\n';
+                    spdlog::error("{}:{} met error: {}:{}", __PRETTY_FUNCTION__, __LINE__, err.message(), err.value());
                 }
             }
         }
@@ -402,7 +482,7 @@ namespace NKN {
                 for (auto it = connections->cbegin(); it != connections->cend(); it++) {
                     ConnectionPtr_t conn = it->second;
                     pplx::create_task(
-                            std::bind(this->sendWith, this->tunaCli, conn->localClientID, conn->remoteClientID, raw,
+                            std::bind(this->sendWith, conn->localClientID, conn->remoteClientID, raw,
                                       conn->RetransmissionTimeout())
                     ).then([&err_cnt, &send_tce, cnt](const boost::system::error_code &err) {
                         if (err) {
@@ -442,15 +522,18 @@ namespace NKN {
 
         size_t Session::Write(const byteSlice &data) {
             if (IsClosed()) {
+                spdlog::error("{}:{} Session[{}] had closed.", __PRETTY_FUNCTION__, __LINE__, this->remoteAddr);
                 // log ErrCode::ErrSessionClosed
                 return 0;
             }
 
             if (!IsEstablished()) {
                 // log ErrCode::ErrSessionNotEstablished
+                spdlog::error("Session[{}] has not established yet.", this->remoteAddr);
                 return 0;
             }
 
+            spdlog::info("write {} bytes to {} mode Session[{}]", data.length(), IsStream()?"stream":"non-stream", this->remoteAddr);
             uint32_t len = data.length();
             if (len == 0) {
                 return 0;
@@ -458,6 +541,7 @@ namespace NKN {
 
             if (!IsStream() && (len > sendMtu.load() || len > sendWindowSize.load())) {
                 // log ErrCode::ErrDataSizeTooLarge
+                spdlog::error("Session[{}] met DataSizeTooLarge error", this->remoteAddr);
                 return 0;
             }
 
@@ -465,11 +549,18 @@ namespace NKN {
             auto src_ptr = data.data();
             auto end_ptr = src_ptr + data.length();
             if (IsStream()) {
-                while (src_ptr <= end_ptr) {
+                while (src_ptr < end_ptr) {
+                    // spdlog::info("{}:{} sess[{}] Waiting SendWindow for write data from {} to {} ...",
+                            // __PRETTY_FUNCTION__, __LINE__, this->remoteAddr, (void*)src_ptr, (void*)end_ptr);
                     auto sendWindowAvailable = waitForSendWindow(1);
                     if (IsClosed()) {   // if closed during wait
                         // log ErrCode::ErrSessionClosed
+                        spdlog::error("{}:{} Session[{}] had closed.", __PRETTY_FUNCTION__, __LINE__, this->remoteAddr);
                         return 0;
+                    }
+
+                    if (sendWindowAvailable == 0) {
+                        this_thread::sleep_for(milliseconds(1000));
                     }
 
                     uint32_t cnt = std::min(uint32_t(end_ptr - src_ptr), sendWindowAvailable);
@@ -483,6 +574,7 @@ namespace NKN {
                     sendBuffer->append(src_ptr, cnt);
                     bytesWrite += cnt;
                     sent += cnt;
+                    // spdlog::info("Appended {} bytes to sendBuff. sent:{}, bytesWrite:{}", cnt, sent, bytesWrite);
 
                     if (shouldFlush) {
                         auto err = flushSendBuffer();
@@ -492,22 +584,28 @@ namespace NKN {
                         }
                     }
                     src_ptr += cnt;
+                    // spdlog::info("{}:{} flushSendBuffer finished. src_ptr:{}, end_ptr:{}", __FILE__, __LINE__, (void*)src_ptr, (void*)end_ptr);
                 }
             } else {
                 // TODO for non-stream mode
             }
 
+            // spdlog::info("Session::Write reach ending.");
             return sent;
         }
 
         size_t Session::Read(byteSlice &buf, size_t) {
+            // spdlog::info("sess->Read():{} Entry, buf size:{}, cap:{}", __LINE__, buf.length(), buf.capacity());
+
             if (IsClosed()) {    // if closed during channel waiting
                 // log ErrCode::ErrSessionClosed
+                spdlog::error("{}:{} Session[{}] had closed.", __PRETTY_FUNCTION__, __LINE__, this->remoteAddr);
                 return 0;
             }
 
             if (!IsEstablished()) {
                 // log ErrCode::ErrSessionNotEstablished
+                spdlog::error("Session[{}] has not established yet.", this->remoteAddr);
                 return 0;
             }
 
@@ -516,8 +614,10 @@ namespace NKN {
                 return 0;
             }
 
+            // spdlog::info("sess->Read():{} Entry, wanted {} bytes", __LINE__, wanted);
+
             uint32_t recv_seq = 0;
-            while (!IsClosed()) {
+            while (true) {
                 if (IsClosed()) {    // if closed during channel waiting
                     // log ErrCode::ErrSessionClosed
                     return 0;
@@ -525,8 +625,11 @@ namespace NKN {
 
                 recv_seq = recvWindowStartSeq;
                 if (recvWindowData->count(recv_seq) > 0) {  // if seq has ready
+                    spdlog::warn("Session::Read():{} seq {} data arrived, continue...", __LINE__, recv_seq);
                     break;
                 }
+                // spdlog::warn("sess->Read():{} recvWindowData[{}] count:{}. Waiting for recvDataUpdate",
+                        // __LINE__, recv_seq, recvWindowData->count(recv_seq));
                 recvDataUpdate.pop(false, chrono::milliseconds(1000));  // wait on channel
             }
 
@@ -540,7 +643,7 @@ namespace NKN {
             auto read_cnt = _recvAndUpdateSeq(recv_seq, pos);
             assert(read_cnt <= wanted);
 
-            auto remain = wanted - read_cnt;
+            /* auto remain = wanted - read_cnt;
             if (IsStream()) {
                 while (remain != 0) {    // prev data->size < wanted, read continue from next seq
                     recv_seq = recvWindowStartSeq;
@@ -553,13 +656,14 @@ namespace NKN {
                     remain -= cnt;
                     read_cnt += cnt;
                 }
-            }
+            } */
 
             return read_cnt;
         }
 
         size_t Session::_recvAndUpdateSeq(uint32_t seq, string::iterator &output_pos) {
             if (recvWindowData->count(seq) <= 0) {  // if map[seq] not exist
+                spdlog::error("_recvAndUpdateSeq({}):{} data not ready", seq, __LINE__);
                 return 0;
             }
 
@@ -567,6 +671,7 @@ namespace NKN {
             auto new_pos = std::copy(data->cbegin(), data->cend(), output_pos);
             int read_cnt = new_pos - output_pos;
             assert(read_cnt >= 0);
+            // spdlog::warn("_recvAndUpdateSeq:{} copied {}/{} data to buff", __LINE__, read_cnt, data->size());
 
             if ((size_t) read_cnt == data->size()) { // all data was copied
                 recvWindowData->erase(seq);
@@ -584,6 +689,7 @@ namespace NKN {
         }
 
         boost::system::error_code Session::Close() {
+            spdlog::error("{}:{} called", __PRETTY_FUNCTION__, __LINE__);
             if (config->Linger != 0) {
                 auto err = flushSendBuffer();
                 if (err) {

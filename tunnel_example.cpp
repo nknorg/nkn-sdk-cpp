@@ -53,13 +53,14 @@ boost_err pipe_read(shared_ptr<ip::tcp::socket> sock, TUNA::ConnPtr_t conn) {
         }
 
         buf.resize(n);
-        // spdlog::info("Recv from [{}:{}]: {}", ep.address(), ep.port(), buf);
+        spdlog::info("pipe_read: Recv {} bytes from [{}:{}]", n, ep.address().to_string(), ep.port());
 
         while (n > 0) {
             size_t w = conn->Write(buf);
             assert (w <= n || w==0);
             buf.erase(0, w);
             n -= w;
+            spdlog::info("Write {} bytes to tuna conn", w);
         }
     }
     spdlog::error("pipe_read[{}:{}] exit due to err {}:{}", ep.address().to_string(), ep.port(), err.message(), err.value());
@@ -71,14 +72,19 @@ boost_err pipe_write(shared_ptr<ip::tcp::socket> sock, TUNA::ConnPtr_t conn) {
     const auto& ep = sock->remote_endpoint();
 
     byteSlice buf(4096, 0);
+    // spdlog::info("pipe_write:[{}:{}] entry...", ep.address().to_string(), ep.port());
     while (true) {
         buf.resize(0);
+        // spdlog::info("pipe_write:[{}:{}] before Read from conn[{}-{}]",
+                // ep.address().to_string(), ep.port(), conn->LocalAddr(), conn->RemoteAddr());
+
         size_t n = conn->Read(buf, 4096);
         if (n == 0) {
             spdlog::warn("pipe_write[{}:{}] read 0 bytes.", ep.address().to_string(), ep.port());
             this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
+        spdlog::info("pipe_write: Recv {}, {} bytes from tuna conn", n, buf.length());
 
         while (n > 0) {
             size_t w = sock->write_some(buffer((void*)buf.data(), n), err);
@@ -94,6 +100,9 @@ boost_err pipe_write(shared_ptr<ip::tcp::socket> sock, TUNA::ConnPtr_t conn) {
 
             buf.erase(w);
             n -= w;
+
+            const auto& ep = sock->remote_endpoint();
+            spdlog::info("Write {} bytes to [{}:{}]", w, ep.address().to_string(), ep.port());
         }
     }
 
@@ -101,8 +110,8 @@ boost_err pipe_write(shared_ptr<ip::tcp::socket> sock, TUNA::ConnPtr_t conn) {
 }
 
 inline void pipe(shared_ptr<ip::tcp::socket> sock, TUNA::ConnPtr_t conn) {
-    async(launch::async, pipe_read, sock, conn);
-    async(launch::async, pipe_write, sock, conn);
+    auto thrd_r = async(launch::async, pipe_read, sock, conn);
+    auto thrd_w = async(launch::async, pipe_write, sock, conn);
 }
 
 void handle_dial(shared_ptr<ip::tcp::socket> sock) {
@@ -139,10 +148,10 @@ int main(int argc, char* argv[]) {
     if (succ==nullptr || (*succ)==false) {
         spdlog::error("MultiClient[{}] can't join NKN network until timeout", g_account->PrivateKey.toHexString());
     }
-    this_thread::sleep_for(std::chrono::milliseconds(1000));
+    this_thread::sleep_for(std::chrono::milliseconds(3000));
     spdlog::info("MultiClient[{}] connected to NKN network", g_account->PrivateKey.toHexString());
 
-    auto g_tunaCli = TUNA::TunaSessionClient::NewTunaSessionClient(g_account, g_mCli, Wallet::NewWallet(g_account), nullptr);
+    g_tunaCli = TUNA::TunaSessionClient::NewTunaSessionClient(g_account, g_mCli, Wallet::NewWallet(g_account), nullptr);
 
     // Listen on local and spawn thread for each connection
     ip::tcp::acceptor acceptor(ioc, {local, (uint16_t)stoul(argv[2])});
