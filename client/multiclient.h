@@ -14,11 +14,11 @@
 #include <condition_variable>
 
 #include <safe_ptr.h>
+#include "include/channel.h"
 #include <cpprest/ws_client.h>
 
 #include "include/wallet.h"
 #include "include/account.h"
-#include "include/channel.h"
 #include "client/config.h"
 #include "client/client.h"
 #include "ncp/session.h"

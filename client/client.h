@@ -4,16 +4,17 @@
 #include <memory>
 #include <future>
 
-#include <cpprest/ws_client.h>
 #include <safe_ptr.h>
 
 #include "unique_ptr_backporting.h"
 #include "crypto/secretbox.h"
-#include "wallet.h"
 #include "message.h"
+#include "wallet.h"
 #include "transaction/sigchain.h"
 #include "serialize.h"
 #include "client/config.h"
+
+#include <cpprest/ws_client.h>
 
 namespace NKN {
 namespace Client {
