@@ -1,17 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 project(nkn_sdk_cpp_priv C CXX)
 
+set(BUILD_SHARED_LIBS ON)
 set(CMAKE_CXX_STANDARD 14)
-set(Boost_USE_MULTITHREADED FALSE)
-set(OPENSSL_ROOT_DIR /usr/local/opt/openssl /usr/local/Cellar/openssl@1.1/1.1.1h/)
 
 add_compile_options("-g" "-O0")
 
-find_package(Boost 1.70.0 REQUIRED)
+find_package(Boost REQUIRED)
 find_package(OpenSSL 1.1.0 REQUIRED)
-find_package(Protobuf 3.10.0 REQUIRED)
-#find_package(GMP 6.2.0 REQUIRED)
-#find_package(Sodium 1.0.10 REQUIRED)
+find_package(Protobuf REQUIRED)
 
 if (GMP_INCLUDE_DIR AND GMP_LIBRARY_DIR )
     set(GMP_FOUND TRUE)
@@ -21,12 +18,14 @@ else()
         PATHS
         /usr/include
         /usr/local/include
+        /opt/homebrew/include
         )
     find_path(GMP_LIBRARY_DIR
         NAMES "libgmp.so" "libgmp.dylib"
         PATHS
         /usr/lib/
         /usr/local/lib/
+        /opt/homebrew/lib
         )
     find_library(GMP_LIBRARIES NAMES gmp
         PATHS ENV GMP_LIBRARY_DIR
@@ -143,9 +142,9 @@ set(SDK_SOURCES
         )
 
 link_directories(
-        ${Boost_LIBRARIES}
+    ${Boost_LIBRARIES_DIR}
         ${GMP_LIBRARY_DIR}
-        ./thirdparty/cpprestsdk/build.dylib/Binaries
+        /opt/homebrew/lib
         ./
         )
 
