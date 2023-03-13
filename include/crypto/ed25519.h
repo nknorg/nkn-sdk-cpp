@@ -59,7 +59,7 @@ namespace ED25519 {
 
         const string toAddress() const {
             string bSlice = toBytes();
-            string v(FOOLPROOFPREFIX);
+            string v(FOOLPROOFPREFIX, PREFIXLEN);
             v.append(bSlice.begin(), bSlice.end());
 
             HASH sha256_once("sha256"), sha256_twice("sha256");
