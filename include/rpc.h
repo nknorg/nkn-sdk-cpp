@@ -24,7 +24,7 @@ typedef pair<string, json::value> kvPair_t;
 inline shared_ptr<json::value> NewJson(const initializer_list<kvPair_t>& pairs) {
     auto jsPtr = make_shared<json::value>(json::value::object());
     for (auto& it: pairs)
-        (*jsPtr)[U(it.first)] = json::value(it.second);
+        (*jsPtr)[_XPLATSTR(it.first)] = json::value(it.second);
     return jsPtr;
 }
 shared_ptr<json::value> NewRequest(const string& method, const vector<kvPair_t>& pairs, uint8_t id=0);
@@ -36,18 +36,18 @@ class JsonRPC {
     http::client::http_client cli;
 
 public:
-    JsonRPC(const string& server): rpcSrv(server), cli(U(rpcSrv)) {}
+    JsonRPC(const string& server): rpcSrv(server), cli(_XPLATSTR(rpcSrv)) {}
 
     inline json::value Call(const string& method, const initializer_list<kvPair_t>& params, uint8_t id=0) {
         json::value req = json::value::object();
         for (auto& it: params)
-            req[U(it.first)] = json::value(it.second);
+            req[_XPLATSTR(it.first)] = json::value(it.second);
         return Call(method, req, id);
     }
     inline json::value Call(const string& method, const vector<kvPair_t>& params, uint8_t id=0) {
         json::value req = json::value::object();
         for (auto& it: params)
-            req[U(it.first)] = json::value(it.second);
+            req[_XPLATSTR(it.first)] = json::value(it.second);
         return Call(method, req, id);
     }
     json::value Call(const string& method, const json::value& params, uint8_t id=0) {
